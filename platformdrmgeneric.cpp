@@ -176,7 +176,7 @@ int DrmGenericImporter::ImportBuffer(buffer_handle_t handle, hwc_drm_bo_t *bo
         modifier[0] = DRM_FORMAT_MOD_ARM_AFBC;
     }
 
-	ret = drmModeAddFB2WithModifiers(drm_->fd(), bo->width, bo->height, bo->format,
+	ret = drmModeAddFB2WithModifiers(drm_->fd(), bo->width, bo->height, DRM_FORMAT_XBGR8888/*bo->format*/,
                       bo->gem_handles, bo->pitches, bo->offsets, modifier,
 		      &bo->fb_id, DRM_MODE_FB_MODIFIERS);
 #else
