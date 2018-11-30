@@ -16,8 +16,8 @@
 
 #define LOG_TAG "hwc-platform-drm-generic"
 
-// #define ENABLE_DEBUG_LOG
-#include <log/custom_log.h>
+// #define LOG_NDEBUG 0
+#include <log/log.h>
 
 #include "drmresources.h"
 #include "platform.h"
@@ -70,38 +70,29 @@ int DrmGenericImporter::Init() {
   return 0;
 }
 
-uint32_t DrmGenericImporter::ConvertHalFormatToDrm(uint32_t hal_format) {
-//	ALOGD("hal_format=0x%x", hal_format);
-  switch (hal_format) {
+uint32_t DrmGenericImporter::ConvertHalFormatToDrm(uint32_t hal_format)
+{
+    switch (hal_format) {
     case HAL_PIXEL_FORMAT_RGB_888:
-//	ALOGD("DRM_FORMAT_BGR888");
-      return DRM_FORMAT_BGR888;
+        return DRM_FORMAT_BGR888;
     case HAL_PIXEL_FORMAT_BGRA_8888:
-  //  ALOGD("DRM_FORMAT_ARGB8888");
-      return DRM_FORMAT_ARGB8888;
+        return DRM_FORMAT_ARGB8888;
     case HAL_PIXEL_FORMAT_RGBX_8888:
-  //  ALOGD("DRM_FORMAT_XBGR8888");
-      return DRM_FORMAT_XBGR8888;
+        return DRM_FORMAT_XBGR8888;
     case HAL_PIXEL_FORMAT_RGBA_8888:
-  //  ALOGD("DRM_FORMAT_ABGR8888");
-      return DRM_FORMAT_ABGR8888;
-    //Fix color error in NenaMark2.
+        return DRM_FORMAT_ABGR8888;
     case HAL_PIXEL_FORMAT_RGB_565:
-  //  ALOGD("DRM_FORMAT_RGB565");
-      return DRM_FORMAT_RGB565;
+        return DRM_FORMAT_RGB565;
     case HAL_PIXEL_FORMAT_YV12:
-  //  ALOGD("DRM_FORMAT_YVU420");
-      return DRM_FORMAT_YVU420;
+        return DRM_FORMAT_YVU420;
     case HAL_PIXEL_FORMAT_YCrCb_NV12:
-  //  ALOGD("DRM_FORMAT_NV12");
-      return DRM_FORMAT_NV12;
+        return DRM_FORMAT_NV12;
     case HAL_PIXEL_FORMAT_YCrCb_NV12_10:
-  //  ALOGD("DRM_FORMAT_NV12_10");
-      return DRM_FORMAT_NV12_10;
+        return DRM_FORMAT_NV12_10;
     default:
-      ALOGE("Cannot convert hal format to drm format %u", hal_format);
-      return -EINVAL;
-  }
+        ALOGE("Cannot convert hal format to drm format %u", hal_format);
+        return -EINVAL;
+    }
 }
 
 int DrmGenericImporter::ImportBuffer(buffer_handle_t handle, hwc_drm_bo_t *bo
@@ -179,17 +170,16 @@ int DrmGenericImporter::ImportBuffer(buffer_handle_t handle, hwc_drm_bo_t *bo
   memset(modifier, 0, sizeof(modifier));
   gralloc_->perform(gralloc_, GRALLOC_MODULE_PERFORM_GET_INTERNAL_FORMAT,
                          handle, &internal_format);
-  if (isAfbcInternalFormat(internal_format))
-  {
-      ALOGD("KP : to set DRM_FORMAT_MOD_ARM_AFBC.");
-    modifier[0] = DRM_FORMAT_MOD_ARM_AFBC;
-  }
+    if (isAfbcInternalFormat(internal_format))
+    {
+        ALOGD("KP : to set DRM_FORMAT_MOD_ARM_AFBC.");
+        modifier[0] = DRM_FORMAT_MOD_ARM_AFBC;
+    }
 
-  ret = drmModeAddFB2WithModifiers(drm_->fd(), bo->width, bo->height, DRM_FORMAT_XBGR8888/*bo->format*/,
+	ret = drmModeAddFB2WithModifiers(drm_->fd(), bo->width, bo->height, bo->format,
                       bo->gem_handles, bo->pitches, bo->offsets, modifier,
 		      &bo->fb_id, DRM_MODE_FB_MODIFIERS);
 #else
-#error "USE_AFBC_LAYER=0"
   ret = drmModeAddFB2(drm_->fd(), bo->width, bo->height, bo->format,
                       bo->gem_handles, bo->pitches, bo->offsets, &bo->fb_id, 0);
 #endif

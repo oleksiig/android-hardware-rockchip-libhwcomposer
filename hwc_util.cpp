@@ -111,6 +111,7 @@ int hwc_get_string_property(const char* pcProperty,const char* default_value,cha
     return 0;
 }
 
+#if 0
 static int CompareLines(int *da,int w)
 {
     int i,j;
@@ -131,7 +132,6 @@ static int CompareLines(int *da,int w)
 
 int DetectValidData(int *data,int w,int h)
 {
-    int i,j;
     int *da;
     int ret;
     /*  detect model
@@ -163,5 +163,5 @@ int DetectValidData(int *data,int w,int h)
 
     return 0;
 }
-
+#endif
 

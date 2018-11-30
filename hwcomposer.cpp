@@ -17,8 +17,8 @@
 #define ATRACE_TAG ATRACE_TAG_GRAPHICS
 #define LOG_TAG "hwcomposer-drm"
 
-//#define ENABLE_DEBUG_LOG
-#include <log/custom_log.h>
+//#define LOG_NDEBUG 0
+#include <log/log.h>
 
 #include "drmhwcomposer.h"
 #include "drmeventlistener.h"
@@ -160,7 +160,7 @@ class DrmHotplugHandler : public DrmEventHandler {
   }
 
   void HandleEvent(uint64_t timestamp_us) {
-    int ret;
+   // int ret;
     DrmConnector *extend = NULL;
     DrmConnector *primary = NULL;
 
@@ -394,7 +394,7 @@ struct hwc_context_t {
  */
 static int update_display_bestmode(hwc_drm_display_t *hd, int display, DrmConnector *c)
 {
-  char resolution[PROPERTY_VALUE_MAX] = "1920x1080p60";
+  char resolution[PROPERTY_VALUE_MAX];
   uint32_t width, height, flags;
   uint32_t hsync_start, hsync_end, htotal;
   uint32_t vsync_start, vsync_end, vtotal;
@@ -404,7 +404,7 @@ static int update_display_bestmode(hwc_drm_display_t *hd, int display, DrmConnec
   int timeline;
   static uint32_t last_mainType,last_auxType;
   uint32_t MaxResolution = 0,temp;
-  uint32_t flags_temp;
+//  uint32_t flags_temp;
 
   timeline = property_get_int32("sys.display.timeline", -1);
   /*
@@ -432,6 +432,8 @@ static int update_display_bestmode(hwc_drm_display_t *hd, int display, DrmConnec
         last_auxType = c->get_type();
     }
   }
+	
+	property_get("persist.sys.framebuffer.main", resolution, "1920x1080@60");
 
 	ALOGD("%s: %s", __func__, resolution);
 
@@ -461,8 +463,6 @@ static int update_display_bestmode(hwc_drm_display_t *hd, int display, DrmConnec
 		else
 			interlaced = false;
 
-		ALOGD("%s: len=%d width=%d height=%d", __func__, len, width, height);
-
 		if (len == 4 && width != 0 && height != 0) 
 		{
 			for (const DrmMode &conn_mode : c->modes()) {
@@ -476,7 +476,7 @@ static int update_display_bestmode(hwc_drm_display_t *hd, int display, DrmConnec
 		}
 	}
 
-	ALOGD("%s: AUTO", __func__);
+	ALOGD("%s: Trying Auto...", __func__);
 
   for (const DrmMode &conn_mode : c->modes()) {
     if (conn_mode.type() & DRM_MODE_TYPE_PREFERRED) {
@@ -754,11 +754,11 @@ int DrmHwcLayer::InitFromHwcLayer(struct hwc_context_t *ctx, int display, hwc_la
     if(hd->is_interlaced)
     {
 		//use vop plane scale instead of vop post scale.
-		char overscan[PROPERTY_VALUE_MAX];
+		//char overscan[PROPERTY_VALUE_MAX];
 		int left_margin, right_margin, top_margin, bottom_margin;
 		float left_margin_f, right_margin_f, top_margin_f, bottom_margin_f;
 		float lscale = 0, tscale = 0, rscale = 0, bscale = 0;
-		int xres,yres;
+	//	int xres,yres;
 		int disp_old_l,disp_old_t,disp_old_r,disp_old_b;
 
 		//if(hd->stereo_mode != NON_3D)
@@ -1040,13 +1040,13 @@ int DrmHwcLayer::InitFromHwcLayer(struct hwc_context_t *ctx, int display, hwc_la
       return -EINVAL;
   }
 
-    D("to check AFBC.");
+    ALOGV("to check AFBC.");
 
 #if USE_AFBC_LAYER
     // if(sf_handle)
     if ( sf_handle && bFbTarget_ )
     {
-        D("we got buffer handle for fb_target_layer, to get internal_format.");
+        ALOGV("we got buffer handle for fb_target_layer, to get internal_format.");
         ret = gralloc->perform(gralloc, GRALLOC_MODULE_PERFORM_GET_INTERNAL_FORMAT,
                              sf_handle, &internal_format);
         if (ret) {
@@ -1056,39 +1056,39 @@ int DrmHwcLayer::InitFromHwcLayer(struct hwc_context_t *ctx, int display, hwc_la
 
         if(isAfbcInternalFormat(internal_format))
         {
-            D("to set 'is_afbc'.");
+            ALOGV("to set 'is_afbc'.");
             is_afbc = true;
         }
         else
         {
-            D("not a afbc_buffer.");
+            ALOGV("not a afbc_buffer.");
         }
     }
 
     if(bFbTarget_ && !sf_handle)
     {
-        D("we could not got buffer handle, and current buffer is for fb_target_layer, to check AFBC in a trick way.");
+        ALOGV("we could not got buffer handle, and current buffer is for fb_target_layer, to check AFBC in a trick way.");
 
         static int iFbdcSupport = -1;
-        D_DEC(iFbdcSupport);
+      //  D_DEC(iFbdcSupport);
 
         // if(iFbdcSupport == -1)
         if(iFbdcSupport <= 0)
         {
             char fbdc_value[PROPERTY_VALUE_MAX];
-            int ret = property_get("sys.gmali.fbdc_target", fbdc_value, "0");
-            D_DEC(ret);
+            property_get("sys.gmali.fbdc_target", fbdc_value, "0");
+           // D_DEC(ret);
 
             iFbdcSupport = atoi(fbdc_value);
             if(iFbdcSupport > 0 && display == 0)
             {
-                D("to set 'is_afbc'.");
+                ALOGV("to set 'is_afbc'.");
                 is_afbc = true;
             }
         }
         else if(iFbdcSupport > 0 && display == 0)
         {
-            D("to set 'is_afbc'.");
+            ALOGV("to set 'is_afbc'.");
             is_afbc = true;
         }
     }
@@ -1131,10 +1131,11 @@ static void hwc_dump(struct hwc_composer_device_1 *dev, char *buff,
   buff[buff_len - 1] = '\0';
 }
 
+/*
 static bool hwc_skip_layer(const std::pair<int, int> &indices, int i) {
   return indices.first >= 0 && i >= indices.first && i <= indices.second;
 }
-
+*/
 static bool is_use_gles_comp(struct hwc_context_t *ctx, DrmConnector *connector, hwc_display_contents_1_t *display_content, int display_id)
 {
     int num_layers = display_content->numHwLayers;
@@ -1223,10 +1224,10 @@ static bool is_use_gles_comp(struct hwc_context_t *ctx, DrmConnector *connector,
         {
             int src_l,src_t,src_r,src_b,src_w,src_h;
             int dst_l,dst_t,dst_r,dst_b,dst_w,dst_h;
-            hwc_region_t * visible_region = &layer->visibleRegionScreen;
-            hwc_rect_t const * visible_rects = visible_region->rects;
-            hwc_rect_t  rect_merge;
-            int left_min = 0, top_min = 0, right_max = 0, bottom_max=0;
+            //hwc_region_t * visible_region = &layer->visibleRegionScreen;
+            //hwc_rect_t const * visible_rects = visible_region->rects;
+           // hwc_rect_t  rect_merge;
+            //int left_min = 0, top_min = 0, right_max = 0, bottom_max=0;
             float rga_h_scale=1.0, rga_v_scale=1.0;
 
             src_l = (int)layer->sourceCropf.left;
@@ -1257,8 +1258,6 @@ static bool is_use_gles_comp(struct hwc_context_t *ctx, DrmConnector *connector,
             }
             dst_w = dst_r - dst_l;
             dst_h = dst_b - dst_t;
-            int dst_raw_w = dst_w;
-            int dst_raw_h = dst_h;
             dst_w = ALIGN_DOWN(dst_w, 8);
             dst_h = ALIGN_DOWN(dst_h, 2);
 #else
@@ -1482,10 +1481,9 @@ static HDMI_STAT detect_hdmi_status(void)
     else
         return HDMI_ON;
 }
-
-static bool parse_hdmi_output_format_prop(char* strprop, drm_hdmi_output_type *format, dw_hdmi_rockchip_color_depth *depth) {
-    char color_depth[PROPERTY_VALUE_MAX];
-    char color_format[PROPERTY_VALUE_MAX];
+/*
+static bool parse_hdmi_output_format_prop(char* strprop, drm_hdmi_output_type *format, dw_hdmi_rockchip_color_depth *depth)
+{
     if (!strcmp(strprop, "Auto")) {
         *format = DRM_HDMI_OUTPUT_YCBCR_HQ;
         *depth = ROCKCHIP_DEPTH_DEFAULT;
@@ -1542,7 +1540,7 @@ static bool parse_hdmi_output_format_prop(char* strprop, drm_hdmi_output_type *f
     ALOGE("hdmi output format is invalid. [%s]", strprop);
     return false;
 }
-
+*/
 static bool update_hdmi_output_format(struct hwc_context_t *ctx, DrmConnector *connector, int display,
                          hwc_drm_display_t *hd) {
 
@@ -1789,8 +1787,7 @@ static int PrepareRgaBuffer(DrmRgaBuffer &rgaBuffer, DrmHwcLayer &layer) {
     }
     dst_w = dst_r - dst_l;
     dst_h = dst_b - dst_t;
-    int dst_raw_w = dst_w;
-    int dst_raw_h = dst_h;
+
     dst_w = ALIGN_DOWN(dst_w, 8);
     dst_h = ALIGN_DOWN(dst_h, 2);
 #else
@@ -1962,7 +1959,7 @@ static int hwc_prepare(hwc_composer_device_1_t *dev, size_t num_displays,
 
   for (int i = 0; i < (int)num_displays; ++i) {
     bool use_framebuffer_target = false;
-    drmModeConnection state;
+   // drmModeConnection state;
 
     if (!display_contents[i])
       continue;
@@ -2070,7 +2067,7 @@ static int hwc_prepare(hwc_composer_device_1_t *dev, size_t num_displays,
     // Since we can't composite HWC_SKIP_LAYERs by ourselves, we'll let SF
     // handle all layers in between the first and last skip layers. So find the
     // outer indices and mark everything in between as HWC_FRAMEBUFFER
-    std::pair<int, int> skip_layer_indices(-1, -1);
+   // std::pair<int, int> skip_layer_indices(-1, -1);
 
     int format = 0;
     int usage = 0;
@@ -2241,7 +2238,7 @@ static int hwc_prepare(hwc_composer_device_1_t *dev, size_t num_displays,
     if(!use_framebuffer_target)
         use_framebuffer_target = is_use_gles_comp(ctx, connector, display_contents[i], connector->display());
 
-    bool bHasFPS_3D_UI = false;
+  //  bool bHasFPS_3D_UI = false;
     int index = 0;
     for (int j = 0; j < num_layers; j++) {
       hwc_layer_1_t *sf_layer = &display_contents[i]->hwLayers[j];
@@ -2327,7 +2324,6 @@ static int hwc_prepare(hwc_composer_device_1_t *dev, size_t num_displays,
     if(!use_framebuffer_target)
     {
         bool bAllMatch = false;
-        int iUsePlane = 0;
 
         hd->mixMode = HWC_DEFAULT;
         if(crtc && layer_content.layers.size()>0)
@@ -2533,7 +2529,7 @@ static int hwc_set(hwc_composer_device_1_t *dev, size_t num_displays,
       hwc_sync_release(sf_display_contents[i]);
       continue;
     }
-    hwc_drm_display_t *hd = &ctx->displays[c->display()];
+  //  hwc_drm_display_t *hd = &ctx->displays[c->display()];
 
     std::ostringstream display_index_formatter;
     display_index_formatter << "retire fence for display " << i;
@@ -2783,7 +2779,7 @@ static int hwc_set(hwc_composer_device_1_t *dev, size_t num_displays,
       hwc_sync_release(sf_display_contents[i]);
       continue;
     }
-    hwc_drm_display_t *hd = &ctx->displays[c->display()];
+   // hwc_drm_display_t *hd = &ctx->displays[c->display()];
 
     for (auto &fail_display : fail_displays) {
         if( i == fail_display )
@@ -3147,6 +3143,7 @@ static int hwc_device_close(struct hw_device_t *dev) {
  * should be fixed such that it selects the preferred mode for the display, or
  * some other, saner, method of choosing the config.
  */
+/*
 static int hwc_set_initial_config(struct hwc_context_t *ctx, int display) {
   uint32_t config;
   size_t num_configs = 1;
@@ -3163,7 +3160,7 @@ static int hwc_set_initial_config(struct hwc_context_t *ctx, int display) {
 
   return ret;
 }
-
+*/
 static int hwc_initialize_display(struct hwc_context_t *ctx, int display) {
     hwc_drm_display_t *hd = &ctx->displays[display];
     hd->ctx = ctx;

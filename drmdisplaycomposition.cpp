@@ -567,7 +567,7 @@ int DrmDisplayComposition::Plan(SquashState *squash,
   // want to plan a precomposition layer that will be comprised of the already
   // squashed layers).
   std::map<size_t, DrmHwcLayer *> to_composite;
-  bool use_squash_framebuffer = false;
+  //bool use_squash_framebuffer = false;
 
   if (!crtc_) {
     ALOGE("can't not plan when crtc is NULL\n");
@@ -725,7 +725,7 @@ static const char *DPMSModeToString(int dpms_mode) {
       return "<invalid>";
   }
 }
-
+/*
 static void DumpBuffer(const DrmHwcBuffer &buffer, std::ostringstream *out) {
   if (!buffer) {
     *out << "buffer=<invalid>";
@@ -735,7 +735,8 @@ static void DumpBuffer(const DrmHwcBuffer &buffer, std::ostringstream *out) {
   *out << "buffer[w/h/format]=";
   *out << buffer->width << "/" << buffer->height << "/" << buffer->format;
 }
-
+*/
+/*
 static void DumpTransform(uint32_t transform, std::ostringstream *out) {
   *out << "[";
 
@@ -783,7 +784,7 @@ static void DumpTransform(uint32_t transform, std::ostringstream *out) {
   }
   *out << "]";
 }
-
+*/
 static void DumpRegion(const DrmCompositionRegion &region,
                        std::ostringstream *out) {
   *out << "frame";

@@ -1,7 +1,7 @@
 #define LOG_TAG "hwc_rk"
 
-// #define ENABLE_DEBUG_LOG
-#include <log/custom_log.h>
+// #define LOG_NDEBUG 0
+#include <log/log.h>
 
 #include <inttypes.h>
 #ifdef TARGET_BOARD_PLATFORM_RK3368
@@ -1021,7 +1021,7 @@ static bool MatchPlane(std::vector<DrmHwcLayer*>& layer_vector,
                                std::vector<DrmCompositionPlane>& composition_planes,
                                bool bMulArea,
                                bool is_interlaced,
-                               int fbSize,
+                               int /*fbSize*/,
                                bool bReserve)
 {
     uint32_t combine_layer_count = 0;
@@ -1287,7 +1287,6 @@ bool MatchPlanes(
     std::vector<PlaneGroup *>& plane_groups = drm->GetPlaneGroups();
     uint64_t last_zpos=0;
     bool bMatch = false;
-    uint32_t planes_can_use=0;
 
     //set use flag to false.
     for (std::vector<PlaneGroup *> ::const_iterator iter = plane_groups.begin();
@@ -1940,12 +1939,12 @@ void video_ui_optimize(const gralloc_module_t *gralloc, hwc_display_contents_1_t
                         else
 #endif
                         {
-                            ret = DetectValidData((int *)(cpu_addr),iWidth,iHeight);
-                            if(!ret)
-                            {
-                                hd->bHideUi = true;
-                                ALOGD_IF(log_level(DBG_VERBOSE), "@video UI close,iWidth=%d,iHeight=%d",iWidth,iHeight);
-                            }
+                  //          ret = DetectValidData((int *)(cpu_addr),iWidth,iHeight);
+                        //    if(!ret)
+                     //       {
+                      //          hd->bHideUi = true;
+                         //       ALOGD_IF(log_level(DBG_VERBOSE), "@video UI close,iWidth=%d,iHeight=%d",iWidth,iHeight);
+                      //      }
                         }
 #if 1
                         gralloc->unlock(gralloc, second_layer->handle);

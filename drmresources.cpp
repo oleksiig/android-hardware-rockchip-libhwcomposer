@@ -297,8 +297,6 @@ int DrmResources::Init() {
 			current_crtc = crtc.get();
     }
 
-	ALOGE("possible_crtcs %d", possible_crtcs.size());
-
     std::unique_ptr<DrmEncoder> enc(
         new DrmEncoder(this, e, current_crtc, possible_crtcs));
 
@@ -480,8 +478,6 @@ int DrmResources::Init() {
         plane_groups_.push_back(plane_group);
     }
     
-    ALOGE("plane_groups_.size=%d", plane_groups_.size());
-
 	for (uint32_t j = 0; j < p->count_formats; j++) {
                if (p->formats[j] == DRM_FORMAT_NV12 ||
                    p->formats[j] == DRM_FORMAT_NV21) {
@@ -616,7 +612,6 @@ void DrmResources::ClearDisplay(void)
 void DrmResources::ClearAllDisplay(void)
 {
     for (int i = 0; i < HWC_NUM_PHYSICAL_DISPLAY_TYPES; i++) {
-      DrmConnector *conn = GetConnectorFromType(i);
       compositor_.ClearDisplay(i);
     }
 }
@@ -631,8 +626,8 @@ int DrmResources::UpdatePropertys(void)
   if (timeline && timeline == prop_timeline_)
     return 0;
 
-  DrmConnector *primary = GetConnectorFromType(HWC_DISPLAY_PRIMARY);
-  DrmConnector *extend = GetConnectorFromType(HWC_DISPLAY_EXTERNAL);
+//  DrmConnector *primary = GetConnectorFromType(HWC_DISPLAY_PRIMARY);
+//  DrmConnector *extend = GetConnectorFromType(HWC_DISPLAY_EXTERNAL);
 
   drmModeAtomicReqPtr pset = drmModeAtomicAlloc();
   if (!pset) {
@@ -1177,18 +1172,18 @@ void DrmResources::dump_blob(uint32_t blob_id, std::ostringstream *out) {
 	drmModeFreePropertyBlob(blob);
 }
 
-bool DrmResources::is_hdr_panel_support_st2084(DrmConnector *conn) const {
-	uint32_t i;
+bool DrmResources::is_hdr_panel_support_st2084(DrmConnector *conn) const
+{
 	struct hdr_static_metadata* blob_data;
-	drmModePropertyBlobPtr blob;
 	bool bSupport = false;
-  drmModeObjectPropertiesPtr props;
+	drmModePropertyBlobPtr blob;
+	drmModeObjectPropertiesPtr props;
 
-  props = drmModeObjectGetProperties(fd(), conn->id(), DRM_MODE_OBJECT_CONNECTOR);
-  if (!props) {
-    ALOGE("Failed to get properties for %d/%x", conn->id(), DRM_MODE_OBJECT_CONNECTOR);
-    return false;
-  }
+	props = drmModeObjectGetProperties(fd(), conn->id(), DRM_MODE_OBJECT_CONNECTOR);
+	if (!props) {
+		ALOGE("Failed to get properties for %d/%x", conn->id(), DRM_MODE_OBJECT_CONNECTOR);
+		return false;
+	}
 
   bool found = false;
   int value;

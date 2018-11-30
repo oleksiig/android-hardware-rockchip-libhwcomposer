@@ -978,7 +978,7 @@ int DrmDisplayCompositor::PrepareFrame(DrmDisplayComposition *display_comp) {
 
   return ret;
 }
-
+/*
 static const char *RotatingToString(uint64_t rotating) {
   switch (rotating) {
     case (1 << DRM_REFLECT_X):
@@ -997,7 +997,7 @@ static const char *RotatingToString(uint64_t rotating) {
       return "<invalid>";
   }
 }
-
+*/
 int DrmDisplayCompositor::CommitFrame(DrmDisplayComposition *display_comp,
                                       bool test_only) {
   ATRACE_CALL();
@@ -1010,8 +1010,8 @@ int DrmDisplayCompositor::CommitFrame(DrmDisplayComposition *display_comp,
   std::vector<DrmHwcLayer> &layers = display_comp->layers();
   std::vector<DrmCompositionPlane> &comp_planes =
       display_comp->composition_planes();
-  std::vector<DrmCompositionRegion> &pre_comp_regions =
-      display_comp->pre_comp_regions();
+//  std::vector<DrmCompositionRegion> &pre_comp_regions =
+//      display_comp->pre_comp_regions();
 
   DrmCrtc *crtc = display_comp->crtc();
   if (!crtc) {
@@ -1026,8 +1026,8 @@ int DrmDisplayCompositor::CommitFrame(DrmDisplayComposition *display_comp,
   }
 
   if (crtc->can_overscan()) {
-    char overscan[PROPERTY_VALUE_MAX];
-    int left_margin = 100, right_margin= 100, top_margin = 100, bottom_margin = 100;
+    //char overscan[PROPERTY_VALUE_MAX];
+   // int left_margin = 100, right_margin= 100, top_margin = 100, bottom_margin = 100;
 
     DrmConnector *conn = drm_->GetConnectorFromType(display_);
     if(conn == NULL)
@@ -1138,9 +1138,10 @@ int DrmDisplayCompositor::CommitFrame(DrmDisplayComposition *display_comp,
       }
 
       DrmHwcLayer &layer = layers[source_layers.front()];
-      if (!test_only && layer.acquire_fence.get() >= 0) {
-        int acquire_fence = layer.acquire_fence.get();
-        int total_fence_timeout = 0;
+      if (!test_only && layer.acquire_fence.get() >= 0)
+      {
+		int acquire_fence = layer.acquire_fence.get();
+
 #if RK_VR
         if(!(layer.gralloc_buffer_usage & 0x08000000))
 #endif
@@ -1446,7 +1447,7 @@ int DrmDisplayCompositor::CommitFrame(DrmDisplayComposition *display_comp,
     out_log.clear();
   }
 
-out:
+//out:
 
   if (!ret) {
     uint32_t flags = DRM_MODE_ATOMIC_ALLOW_MODESET;
