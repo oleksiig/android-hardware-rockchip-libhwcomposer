@@ -176,7 +176,7 @@ int DrmGenericImporter::ImportBuffer(buffer_handle_t handle, hwc_drm_bo_t *bo
         modifier[0] = DRM_FORMAT_MOD_ARM_AFBC;
     }
 
-	ret = drmModeAddFB2WithModifiers(drm_->fd(), bo->width, bo->height, DRM_FORMAT_XBGR8888/*bo->format*/,
+	ret = drmModeAddFB2WithModifiers(drm_->fd(), bo->width, bo->height, bo->format,
                       bo->gem_handles, bo->pitches, bo->offsets, modifier,
 		      &bo->fb_id, DRM_MODE_FB_MODIFIERS);
 #else
@@ -185,7 +185,7 @@ int DrmGenericImporter::ImportBuffer(buffer_handle_t handle, hwc_drm_bo_t *bo
 #endif
 
     ALOGV("ImportBuffer fd=%d,w=%d,h=%d,format=0x%x,bo->format=0x%x,gem_handle=%d,bo->pitches[0]=%d,fb_id=%d",
-        drm_->fd(), bo->width, bo->height, format,bo->format,
+        drm_->fd(), bo->width, bo->height, format, bo->format,
         gem_handle, bo->pitches[0], bo->fb_id);
 
   if (ret) {
