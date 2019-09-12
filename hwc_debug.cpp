@@ -153,7 +153,9 @@ void dump_layer(const gralloc_module_t *gralloc, bool bDump, hwc_layer_1_t *laye
     size_t i;
   std::ostringstream out;
   int format;
+#if RK_PRINT_LAYER_NAME
   char layername[100];
+#endif
 
   if (!bDump && !log_level(DBG_VERBOSE))
     return;

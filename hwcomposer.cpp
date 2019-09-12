@@ -2172,9 +2172,11 @@ static int hwc_prepare(hwc_composer_device_1_t *dev, size_t num_displays,
             {
                layer->compositionType = HWC_NODRAW;
                //layer->flags |= HWC_SKIP_LAYER;
+#if RK_PRINT_LAYER_NAME
                ALOGD_IF(log_level(DBG_DEBUG),
                        "%s:line=%d layer size[%d,%d] too small ,set HWC_NODRAW, LayerName = %s, ",
                        __FUNCTION__,__LINE__,src_w,src_h,layername);
+#endif
             }
 
 #if RK_PRINT_LAYER_NAME
