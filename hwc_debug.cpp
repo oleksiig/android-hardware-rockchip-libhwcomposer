@@ -1,5 +1,7 @@
 #define LOG_TAG "hwc_debug"
 
+#include <pthread.h>
+
 #include "hwc_debug.h"
 #include "hwc_rockchip.h"
 #include <sstream>

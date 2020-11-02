@@ -47,6 +47,8 @@
 #include <cutils/properties.h>
 #include <hardware/hardware.h>
 #include <hardware/hwcomposer.h>
+#include <android/configuration.h>
+
 #include <sw_sync.h>
 #include <sync/sync.h>
 #include <utils/Trace.h>
@@ -57,8 +59,9 @@
 #include <linux/fb.h>
 
 #include "hwc_util.h"
+
 #include "hwc_rockchip.h"
-#include <android/configuration.h>
+
 #define UM_PER_INCH 25400
 
 namespace android {

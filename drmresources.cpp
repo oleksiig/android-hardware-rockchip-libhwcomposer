@@ -185,7 +185,9 @@ int DrmResources::Init() {
     ALOGE("Failed to open dri- %s", strerror(-errno));
     return -ENODEV;
   }
-
+  
+  ALOGI("%s: fd=%d", __func__, fd());
+  
   int ret = drmSetClientCap(fd(), DRM_CLIENT_CAP_UNIVERSAL_PLANES, 1);
   if (ret) {
     ALOGE("Failed to set universal plane cap %d", ret);

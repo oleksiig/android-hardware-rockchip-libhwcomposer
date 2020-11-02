@@ -1208,22 +1208,18 @@ int DrmDisplayCompositor::CommitFrame(DrmDisplayComposition *display_comp,
 #endif
       rotation = 0;
       if (layer.transform & DrmHwcTransform::kFlipH)
-        rotation |= 1 << DRM_REFLECT_X;
+        rotation |= DRM_MODE_REFLECT_X;
       if (layer.transform & DrmHwcTransform::kFlipV)
-        rotation |= 1 << DRM_REFLECT_Y;
+        rotation |= DRM_MODE_REFLECT_Y;
       if (layer.transform & DrmHwcTransform::kRotate90)
-        rotation |= 1 << DRM_ROTATE_90;
+        rotation |= DRM_MODE_ROTATE_90;
       else if (layer.transform & DrmHwcTransform::kRotate180)
-        rotation |= 1 << DRM_ROTATE_180;
+        rotation |= DRM_MODE_ROTATE_180;
       else if (layer.transform & DrmHwcTransform::kRotate270)
-        rotation |= 1 << DRM_ROTATE_270;
+        rotation |= DRM_MODE_ROTATE_270;
     }
 
     // Disable the plane if there's no framebuffer
-#ifdef RK3368_PX5CAR
-    if (fb_id < 0 && win1_reserved > 0 && plane->is_reserved())
-        continue;
-#endif
     if (fb_id < 0) {
       ret = drmModeAtomicAddProperty(pset, plane->id(),
                                      plane->crtc_property().id(), 0) < 0 ||

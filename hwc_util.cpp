@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
 
 static void sysfs_write(const char *path,const char *s)
 {
