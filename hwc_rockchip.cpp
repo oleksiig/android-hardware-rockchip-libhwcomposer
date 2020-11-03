@@ -1179,15 +1179,15 @@ static bool MatchPlane(std::vector<DrmHwcLayer*>& layer_vector,
                             {
                                 rotation = 0;
                                 if ((*iter_layer)->transform & DrmHwcTransform::kFlipH)
-                                    rotation |= DRM_MODE_REFLECT_X;
+                                    rotation |= 1 << DRM_REFLECT_X;
                                 if ((*iter_layer)->transform & DrmHwcTransform::kFlipV)
-                                    rotation |= DRM_MODE_REFLECT_Y;
+                                    rotation |= 1 << DRM_REFLECT_Y;
                                 if ((*iter_layer)->transform & DrmHwcTransform::kRotate90)
-                                    rotation |= DRM_MODE_ROTATE_90;
+                                    rotation |= 1 << DRM_ROTATE_90;
                                 else if ((*iter_layer)->transform & DrmHwcTransform::kRotate180)
-                                    rotation |= DRM_MODE_ROTATE_180;
+                                    rotation |= 1 << DRM_ROTATE_180;
                                 else if ((*iter_layer)->transform & DrmHwcTransform::kRotate270)
-                                    rotation |= DRM_MODE_ROTATE_270;
+                                    rotation |= 1 << DRM_ROTATE_270;
                                 if(rotation && !(rotation & (*iter_plane)->get_rotate()))
                                     continue;
                             }

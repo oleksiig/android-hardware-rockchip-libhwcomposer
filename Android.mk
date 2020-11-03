@@ -18,59 +18,59 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_SHARED_LIBRARIES := \
-	libcutils \
-	libdrm \
-	libEGL \
-	libGLESv2 \
-	libGLESv1_CM \
-	libhardware \
-	liblog \
-	libui \
-	libsync_hwc \
-	libutils \
-	librga
+    libcutils \
+    libdrm \
+    libEGL \
+    libGLESv2 \
+    libGLESv1_CM \
+    libhardware \
+    liblog \
+    libui \
+    libsync \
+    libutils \
+    librga
 
 LOCAL_STATIC_LIBRARIES := \
-	libtinyxml2
+    libtinyxml2
 
 LOCAL_C_INCLUDES := \
     hardware/rockchip/libgralloc \
-	external/tinyxml2 \
-	external/libdrm \
-	external/libdrm/include/drm \
-	system/core/include/utils \
-	hardware/rockchip/librga \
-	frameworks/native/include \
-	system/core/libsync/include \
-	system/core/libsync
+    external/tinyxml2 \
+    external/libdrm \
+    external/libdrm/include/drm \
+    system/core/include/utils \
+    hardware/rockchip/librga \
+    frameworks/native/include \
+    system/core/libsync/include \
+    system/core/libsync
 
 LOCAL_SRC_FILES := \
-	autolock.cpp \
-	drmresources.cpp \
-	drmcomposition.cpp \
-	drmcompositor.cpp \
-	drmcompositorworker.cpp \
-	drmconnector.cpp \
-	drmcrtc.cpp \
-	drmdisplaycomposition.cpp \
-	drmdisplaycompositor.cpp \
-	drmencoder.cpp \
-	drmeventlistener.cpp \
-	drmmode.cpp \
-	drmplane.cpp \
-	drmproperty.cpp \
-	glworker.cpp \
-	hwcomposer.cpp \
-	platform.cpp \
-	platformdrmgeneric.cpp \
-	platformnv.cpp \
-	separate_rects.cpp \
-	virtualcompositorworker.cpp \
-	vsyncworker.cpp \
-	worker.cpp \
-	hwc_util.cpp \
-	hwc_rockchip.cpp \
-	hwc_debug.cpp
+    autolock.cpp \
+    drmresources.cpp \
+    drmcomposition.cpp \
+    drmcompositor.cpp \
+    drmcompositorworker.cpp \
+    drmconnector.cpp \
+    drmcrtc.cpp \
+    drmdisplaycomposition.cpp \
+    drmdisplaycompositor.cpp \
+    drmencoder.cpp \
+    drmeventlistener.cpp \
+    drmmode.cpp \
+    drmplane.cpp \
+    drmproperty.cpp \
+    glworker.cpp \
+    hwcomposer.cpp \
+    platform.cpp \
+    platformdrmgeneric.cpp \
+    platformnv.cpp \
+    separate_rects.cpp \
+    virtualcompositorworker.cpp \
+    vsyncworker.cpp \
+    worker.cpp \
+    hwc_util.cpp \
+    hwc_rockchip.cpp \
+    hwc_debug.cpp
 
 # Disable afbc by default.
 USE_AFBC_LAYER ?= 0
@@ -98,8 +98,8 @@ RK_3D_VIDEO := 0
 RK_RGA_SCALE_AND_ROTATE := 0
 
 LOCAL_CPPFLAGS += \
-	-DTARGET_BOARD_PLATFORM_RK3399 \
-	-DRK_DRM_GRALLOC=1 \
+    -DTARGET_BOARD_PLATFORM_RK3399 \
+    -DRK_DRM_GRALLOC=1 \
     -DMALI_AFBC_GRALLOC=1
 else
 $(error "Unsupported platform $(TARGET_BOARD_PLATFORM)")
@@ -110,31 +110,31 @@ ifeq ($(TARGET_USES_HWC2),true)
 endif
 
 # RK_RGA_PREPARE_ASYNC and RK_RGA_COMPSITE_SYNC are exclusive.
-# 	RK_RGA_PREPARE_ASYNC: use async rga in hwc_prepare.
-#	RK_RGA_COMPSITE_SYNC: use sync rga in composite thread.
+#   RK_RGA_PREPARE_ASYNC: use async rga in hwc_prepare.
+#   RK_RGA_COMPSITE_SYNC: use sync rga in composite thread.
 LOCAL_CPPFLAGS += \
-	-DUSE_SQUASH=0 \
-	-DRK_RGA_TEST=0 \
-	-DRK_VR=0 \
-	-DRK_STEREO=0 \
-	-DUSE_GL_WORKER=0 \
-	-DUSE_DRM_GENERIC_IMPORTER \
-	-DUSE_MULTI_AREAS=1 \
-	-DRK_RGA_PREPARE_ASYNC=1 \
-	-DRK_RGA_COMPSITE_SYNC=0 \
-	-DUSE_AFBC_LAYER=$(USE_AFBC_LAYER) \
-	-DRK_SKIP_SUB=1 \
-	-DRK_VIDEO_UI_OPT=0 \
-	-DRK_VIDEO_SKIP_LINE=1 \
-	-DRK_INVALID_REFRESH=1 \
-	-DRK_HDR_PERF_MODE=0 \
-	-DRK_PRINT_LAYER_NAME=$(RK_PRINT_LAYER_NAME) \
-	-DRK_SORT_AREA_BY_XPOS=$(RK_SORT_AREA_BY_XPOS) \
-	-DRK_HOR_INTERSECT_LIMIT=$(RK_HOR_INTERSECT_LIMIT) \
-	-DENABLE_RELEASE_FENCE=1 \
-	-DFORCE_WAIT_ACQUIRE_FENCE=0 \
-	-DRK_RGA_SCALE_AND_ROTATE=$(RK_RGA_SCALE_AND_ROTATE) \
-	-DRGA_VER=$(RGA_VER)
+    -DUSE_SQUASH=0 \
+    -DRK_RGA_TEST=0 \
+    -DRK_VR=0 \
+    -DRK_STEREO=0 \
+    -DUSE_GL_WORKER=0 \
+    -DUSE_DRM_GENERIC_IMPORTER \
+    -DUSE_MULTI_AREAS=1 \
+    -DRK_RGA_PREPARE_ASYNC=1 \
+    -DRK_RGA_COMPSITE_SYNC=0 \
+    -DUSE_AFBC_LAYER=$(USE_AFBC_LAYER) \
+    -DRK_SKIP_SUB=1 \
+    -DRK_VIDEO_UI_OPT=0 \
+    -DRK_VIDEO_SKIP_LINE=1 \
+    -DRK_INVALID_REFRESH=1 \
+    -DRK_HDR_PERF_MODE=0 \
+    -DRK_PRINT_LAYER_NAME=$(RK_PRINT_LAYER_NAME) \
+    -DRK_SORT_AREA_BY_XPOS=$(RK_SORT_AREA_BY_XPOS) \
+    -DRK_HOR_INTERSECT_LIMIT=$(RK_HOR_INTERSECT_LIMIT) \
+    -DENABLE_RELEASE_FENCE=1 \
+    -DFORCE_WAIT_ACQUIRE_FENCE=0 \
+    -DRK_RGA_SCALE_AND_ROTATE=$(RK_RGA_SCALE_AND_ROTATE) \
+    -DRGA_VER=$(RGA_VER)
 
 MAJOR_VERSION := "RK_GRAPHICS_VER=commit-id:$(shell cd $(LOCAL_PATH) && git log  -1 --oneline | awk '{print $$1}')"
 LOCAL_CPPFLAGS += -DRK_GRAPHICS_VER=\"$(MAJOR_VERSION)\"

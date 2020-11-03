@@ -173,7 +173,7 @@ int DrmGenericImporter::ImportBuffer(buffer_handle_t handle, hwc_drm_bo_t *bo
     if (isAfbcInternalFormat(internal_format))
     {
         ALOGD("KP : to set DRM_FORMAT_MOD_ARM_AFBC.");
-        modifier[0] = DRM_FORMAT_MOD_ARM_AFBC(1);
+        modifier[0] = DRM_FORMAT_MOD_ARM_AFBC;
     }
 
 	ret = drmModeAddFB2WithModifiers(drm_->fd(), bo->width, bo->height, bo->format,

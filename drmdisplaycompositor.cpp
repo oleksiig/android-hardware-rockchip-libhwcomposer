@@ -1208,15 +1208,15 @@ int DrmDisplayCompositor::CommitFrame(DrmDisplayComposition *display_comp,
 #endif
       rotation = 0;
       if (layer.transform & DrmHwcTransform::kFlipH)
-        rotation |= DRM_MODE_REFLECT_X;
+        rotation |= 1 << DRM_REFLECT_X;
       if (layer.transform & DrmHwcTransform::kFlipV)
-        rotation |= DRM_MODE_REFLECT_Y;
+        rotation |= 1 << DRM_REFLECT_Y;
       if (layer.transform & DrmHwcTransform::kRotate90)
-        rotation |= DRM_MODE_ROTATE_90;
+        rotation |= 1 << DRM_ROTATE_90;
       else if (layer.transform & DrmHwcTransform::kRotate180)
-        rotation |= DRM_MODE_ROTATE_180;
+        rotation |= 1 << DRM_ROTATE_180;
       else if (layer.transform & DrmHwcTransform::kRotate270)
-        rotation |= DRM_MODE_ROTATE_270;
+        rotation |= 1 << DRM_ROTATE_270;
     }
 
     // Disable the plane if there's no framebuffer
