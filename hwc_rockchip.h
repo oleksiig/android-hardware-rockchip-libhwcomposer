@@ -1,3 +1,39 @@
+/*
+ * Copyright (C) 2018 Fuzhou Rockchip Electronics Co.Ltd.
+ *
+ * Modification based on code covered by the Apache License, Version 2.0 (the "License").
+ * You may not use this software except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS TO YOU ON AN "AS IS" BASIS
+ * AND ANY AND ALL WARRANTIES AND REPRESENTATIONS WITH RESPECT TO SUCH SOFTWARE, WHETHER EXPRESS,
+ * IMPLIED, STATUTORY OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY IMPLIED WARRANTIES OF TITLE,
+ * NON-INFRINGEMENT, MERCHANTABILITY, SATISFACTROY QUALITY, ACCURACY OR FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.
+ *
+ * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Copyright (C) 2015 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef _HWC_ROCKCHIP_H_
 #define _HWC_ROCKCHIP_H_
 
@@ -9,25 +45,37 @@
 #include "drmframebuffer.h"
 #include <fcntl.h>
 
+/*
+ * In order to pass VTS should amend property to follow google standard.
+ * From Android P version, vendor need to use the "vendor.xx.xx" property
+ * instead of the "sys.xx.xx" property.
+ * For example format as follows:
+       hwc.        ->  vendor.hwc.
+       sys.        ->  vendor.
+       persist.sys ->  persist.vendor
+ */
+#ifdef ANDROID_P
+#define PROPERTY_TYPE "vendor"
+#else
+#define PROPERTY_TYPE "sys"
+#endif
+
+/*#if DRM_DRIVER_VERSION == 2
+typedef struct hdr_output_metadata hdr_metadata_s;
+#define HDR_METADATA_EOTF_T(hdr_metadata) hdr_metadata.hdmi_metadata_type1.eotf
+#define HDR_METADATA_EOTF_P(hdr_metadata) hdr_metadata->hdmi_metadata_type1.eotf
+#else
+typedef struct hdr_static_metadata hdr_metadata_s;
+#define HDR_METADATA_EOTF_T(hdr_metadata) hdr_metadata.eotf
+#define HDR_METADATA_EOTF_P(hdr_metadata) hdr_metadata->eotf
+#endif
+*/
 namespace android {
 //G6110_SUPPORT_FBDC
 #define FBDC_BGRA_8888                  0x125 //HALPixelFormatSetCompression(HAL_PIXEL_FORMAT_BGRA_8888,HAL_FB_COMPRESSION_DIRECT_16x4)
 #define FBDC_RGBA_8888                  0x121 //HALPixelFormatSetCompression(HAL_PIXEL_FORMAT_RGBA_8888,HAL_FB_COMPRESSION_DIRECT_16x4)
 
 #define MOST_WIN_ZONES                  4
-#if RK_STEREO
-#define READ_3D_MODE  			(0)
-#define WRITE_3D_MODE 			(1)
-#endif
-
-#if RK_VIDEO_SKIP_LINE
-#ifdef TARGET_BOARD_PLATFORM_RK3399
-#define SKIP_LINE_NUM_NV12_10		(3)
-#else
-#define SKIP_LINE_NUM_NV12_10		(2)
-#endif
-#define SKIP_LINE_NUM_NV12		(2)
-#endif
 
 /* see also http://vektor.theorem.ca/graphics/ycbcr/ */
 enum v4l2_colorspace {
@@ -150,16 +198,12 @@ typedef struct hwc_drm_display {
   struct hwc_context_t *ctx;
   const gralloc_module_t *gralloc;
   int display;
-#if RK_VIDEO_UI_OPT
-  int iUiFd;
-  bool bHideUi;
-#endif
   bool is10bitVideo;
   MixMode mixMode;
   bool isVideo;
   bool isHdr;
   bool hasEotfPlane;
-  struct hdr_static_metadata last_hdr_metadata;
+  //hdr_metadata_s last_hdr_metadata;
   int colorimetry;
   int color_format;
   int color_depth;
@@ -178,22 +222,29 @@ typedef struct hwc_drm_display {
   int display_timeline;
   int hotplug_timeline;
   bool bPreferMixDown;
-#if  RK_RGA_PREPARE_ASYNC
+#if RK_RGA_PREPARE_ASYNC
     int rgaBuffer_index;
     DrmRgaBuffer rgaBuffers[MaxRgaBuffers];
     bool mUseRga;
 #endif
+    int transform_nv12;
+    int transform_normal;
 } hwc_drm_display_t;
 
 /*
  * Base_parameter is used for 3328_8.0  , by libin start.
  */
-
+#define AUTO_BIT_RESET 0x00
 #define RESOLUTION_AUTO			(1<<0)
 #define COLOR_AUTO				(1<<1)
 #define HDCP1X_EN				(1<<2)
 #define RESOLUTION_WHITE_EN		(1<<3)
 #define SCREEN_LIST_MAX 5
+#define DEFAULT_BRIGHTNESS  50
+#define DEFAULT_CONTRAST  50
+#define DEFAULT_SATURATION  50
+#define DEFAULT_HUE  50
+#define DEFAULT_OVERSCAN_VALUE 100
 
 
 struct drm_display_mode {
@@ -223,10 +274,10 @@ enum output_format {
     invalid_output=6,
 };
 
-enum  output_depth{
-    Automatic=0,
-    depth_24bit=8,
-    depth_30bit=10,
+enum output_depth {
+    Automatic = 0,
+    depth_24bit = 8,
+    depth_30bit = 10,
 };
 
 struct overscan {
@@ -274,44 +325,38 @@ struct disp_info {
     struct lut_data mlutdata;/*6k+4*/
 };
 
-/*
-struct file_base_parameter
-{
-    struct disp_info main;
-    struct disp_info aux;
+enum {
+    /* this layer is to be drawn into the framebuffer by SurfaceFlinger */
+    HWC_FRAMEBUFFER = 0,
+
+    /* this layer will be handled in the HWC */
+    HWC_OVERLAY = 1,
+
+    /* this is the background layer. it's used to set the background color.
+     * there is only a single background layer */
+    HWC_BACKGROUND = 2,
+
+    /* this layer holds the result of compositing the HWC_FRAMEBUFFER layers.
+     * Added in HWC_DEVICE_API_VERSION_1_1. */
+    HWC_FRAMEBUFFER_TARGET = 3,
+
+    /* this layer's contents are taken from a sideband buffer stream.
+     * Added in HWC_DEVICE_API_VERSION_1_4. */
+    HWC_SIDEBAND = 4,
+
+    /* this layer's composition will be handled by hwcomposer by dedicated
+       cursor overlay hardware. hwcomposer will also all async position updates
+       of this layer outside of the normal prepare()/set() loop. Added in
+       HWC_DEVICE_API_VERSION_1_4. */
+    HWC_CURSOR_OVERLAY =  5,
+
+    HWC_TOWIN0,
+    HWC_TOWIN1,
+    HWC_LCDC,
+    HWC_NODRAW,
+    HWC_MIX,
+    HWC_MIX_V2
 };
-
-static char const *const device_template[] =
-{
-    "/dev/block/platform/1021c000.dwmmc/by-name/baseparameter",
-    "/dev/block/platform/30020000.dwmmc/by-name/baseparameter",
-    "/dev/block/platform/fe330000.sdhci/by-name/baseparameter",
-    "/dev/block/platform/ff520000.dwmmc/by-name/baseparameter",
-    "/dev/block/platform/ff0f0000.dwmmc/by-name/baseparameter",
-    "/dev/block/rknand_baseparameter",
-    NULL
-};
-
-enum flagBaseParameter
-{
-    BP_UPDATE = 0,
-    BP_RESOLUTION,
-    BP_FB_SIZE,
-    BP_DEVICE,
-    BP_COLOR,
-    BP_BRIGHTNESS,
-    BP_CONTRAST,
-    BP_SATURATION,
-    BP_HUE,
-    BP_OVERSCAN,
-};
-*/
-//const char* hwc_get_baseparameter_file(void);
-
-//int hwc_get_baseparameter_config(char *parameter, int display, int flag, int type);
-
-int hwc_parse_format_into_prop(int display,unsigned int format,unsigned int depthc);
-
 
 /*
  * Base_parameter is used for 3328_8.0 , by libin end.
@@ -346,10 +391,10 @@ int hwc_static_screen_opt_set(bool isGLESComp);
 float getPixelWidthByAndroidFormat(int format);
 
 #ifdef USE_HWC2
-int hwc_get_handle_displayStereo(const gralloc_module_t *gralloc, buffer_handle_t hnd);
-int hwc_set_handle_displayStereo(const gralloc_module_t *gralloc, buffer_handle_t hnd, int32_t displayStereo);
-int hwc_get_handle_alreadyStereo(const gralloc_module_t *gralloc, buffer_handle_t hnd);
-int hwc_set_handle_alreadyStereo(const gralloc_module_t *gralloc, buffer_handle_t hnd, int32_t alreadyStereo);
+//int hwc_get_handle_displayStereo(const gralloc_module_t *gralloc, buffer_handle_t hnd);
+//int hwc_set_handle_displayStereo(const gralloc_module_t *gralloc, buffer_handle_t hnd, int32_t displayStereo);
+//int hwc_get_handle_alreadyStereo(const gralloc_module_t *gralloc, buffer_handle_t hnd);
+//int hwc_set_handle_alreadyStereo(const gralloc_module_t *gralloc, buffer_handle_t hnd, int32_t alreadyStereo);
 int hwc_get_handle_layername(const gralloc_module_t *gralloc, buffer_handle_t hnd, char* layername, unsigned long len);
 int hwc_set_handle_layername(const gralloc_module_t *gralloc, buffer_handle_t hnd, const char* layername);
 #endif
@@ -364,16 +409,13 @@ int hwc_get_handle_size(const gralloc_module_t *gralloc, buffer_handle_t hnd);
 int hwc_get_handle_attributes(const gralloc_module_t *gralloc, buffer_handle_t hnd, std::vector<int> *attrs);
 int hwc_get_handle_attibute(const gralloc_module_t *gralloc, buffer_handle_t hnd, attribute_flag_t flag);
 int hwc_get_handle_primefd(const gralloc_module_t *gralloc, buffer_handle_t hnd);
-
-#if RK_DRM_GRALLOC
 uint32_t hwc_get_handle_phy_addr(const gralloc_module_t *gralloc, buffer_handle_t hnd);
-#endif
 
 uint32_t hwc_get_layer_colorspace(hwc_layer_1_t *layer);
 uint32_t colorspace_convert_to_linux(uint32_t colorspace);
 
 bool vop_support_format(uint32_t hal_format);
-bool vop_support_scale(hwc_layer_1_t *layer);
+bool vop_support_scale(hwc_layer_1_t *layer,hwc_drm_display_t *hd);
 bool GetCrtcSupported(const DrmCrtc &crtc, uint32_t possible_crtc_mask);
 bool match_process(DrmResources* drm, DrmCrtc *crtc, bool is_interlaced,
                         std::vector<DrmHwcLayer>& layers, int iPlaneSize, int fbSize,
@@ -381,10 +423,6 @@ bool match_process(DrmResources* drm, DrmCrtc *crtc, bool is_interlaced,
 bool mix_policy(DrmResources* drm, DrmCrtc *crtc, hwc_drm_display_t *hd,
                 std::vector<DrmHwcLayer>& layers, int iPlaneSize, int fbSize,
                 std::vector<DrmCompositionPlane>& composition_planes);
-
-#if RK_VIDEO_UI_OPT
-void video_ui_optimize(const gralloc_module_t *gralloc, hwc_display_contents_1_t *display_content, hwc_drm_display_t *hd);
-#endif
 
 void hwc_list_nodraw(hwc_display_contents_1_t  *list);
 void hwc_sync_release(hwc_display_contents_1_t  *list);

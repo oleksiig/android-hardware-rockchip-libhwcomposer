@@ -1,4 +1,24 @@
 /*
+ * Copyright (C) 2018 Fuzhou Rockchip Electronics Co.Ltd.
+ *
+ * Modification based on code covered by the Apache License, Version 2.0 (the "License").
+ * You may not use this software except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS TO YOU ON AN "AS IS" BASIS
+ * AND ANY AND ALL WARRANTIES AND REPRESENTATIONS WITH RESPECT TO SUCH SOFTWARE, WHETHER EXPRESS,
+ * IMPLIED, STATUTORY OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY IMPLIED WARRANTIES OF TITLE,
+ * NON-INFRINGEMENT, MERCHANTABILITY, SATISFACTROY QUALITY, ACCURACY OR FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.
+ *
+ * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  * Copyright (C) 2015 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,7 +62,6 @@ DrmMode::DrmMode(drmModeModeInfoPtr m)
       flags_(m->flags),
       type_(m->type),
       name_(m->name) {
-      
       interlaced_ = !!(flags_ & DRM_MODE_FLAG_INTERLACE);
       
       ALOGD("DrmMode::DrmMode() h=%d,v=%d,interlaced=%d,v_refresh_=%d,flags=%d,clk=%d",
@@ -89,6 +108,15 @@ bool DrmMode::equal(const DrmMode &m) const {
         return true;
   return false;
 }
+bool DrmMode::equal_no_flag_and_type(const DrmMode &m) const {
+  if (clock_ == m.clock() && h_display_ == m.h_display()&&
+      h_sync_start_ == m.h_sync_start() && h_sync_end_ == m.h_sync_end() &&
+      h_total_ == m.h_total() &&
+      v_display_ == m.v_display() && v_sync_start_ == m.v_sync_start() &&
+      v_sync_end_ == m.v_sync_end() && v_total_ == m.v_total())
+        return true;
+  return false;
+}
 
 bool DrmMode::equal(uint32_t width, uint32_t height, uint32_t vrefresh,
                     bool interlaced) const
@@ -114,12 +142,16 @@ bool DrmMode::equal(uint32_t width, uint32_t height, float vrefresh,
 {
   float v_refresh = clock_ / (float)(v_total_ * h_total_) * 1000.0f;
   uint32_t flags_temp;
+  uint32_t vrefresh_temp = 0, v_refresh_temp=0;
   if (flags_ & DRM_MODE_FLAG_INTERLACE)
     v_refresh *= 2;
   if (flags_ & DRM_MODE_FLAG_DBLSCAN)
     v_refresh /= 2;
   if (v_scan_ > 1)
     v_refresh /= v_scan_ ;
+
+  vrefresh_temp = round(vrefresh * 100);
+  v_refresh_temp = round(v_refresh * 100);
 
   /* vrefresh within 1 HZ */
   if (fabs(v_refresh - vrefresh) > 1.0f)
@@ -128,13 +160,15 @@ bool DrmMode::equal(uint32_t width, uint32_t height, float vrefresh,
   if (h_display_ == width && v_display_ == height &&
       hsync_start == h_sync_start_ && hsync_end == h_sync_end_ &&
       vsync_start == v_sync_start_ && vsync_end == v_sync_end_ &&
-      htotal == h_total_ && vtotal == v_total_ && flags == flags_)
+      htotal == h_total_ && vtotal == v_total_ && flags == flags_ &&
+      vrefresh_temp == v_refresh_temp)
     return true;
 
   if (h_display_ == width && v_display_ == height &&
       hsync_start == h_sync_start_ && hsync_end == h_sync_end_ &&
       vsync_start == v_sync_start_ && vsync_end == v_sync_end_ &&
-      htotal == h_total_ && vtotal == v_total_ ) {
+      htotal == h_total_ && vtotal == v_total_ &&
+      vrefresh_temp == v_refresh_temp) {
         flags_temp = DRM_MODE_FLAG_PHSYNC|DRM_MODE_FLAG_NHSYNC|DRM_MODE_FLAG_PVSYNC|
                          DRM_MODE_FLAG_NVSYNC|DRM_MODE_FLAG_INTERLACE|
                          DRM_MODE_FLAG_420_MASK;

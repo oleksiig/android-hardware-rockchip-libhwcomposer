@@ -1,4 +1,24 @@
 /*
+ * Copyright (C) 2018 Fuzhou Rockchip Electronics Co.Ltd.
+ *
+ * Modification based on code covered by the Apache License, Version 2.0 (the "License").
+ * You may not use this software except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS TO YOU ON AN "AS IS" BASIS
+ * AND ANY AND ALL WARRANTIES AND REPRESENTATIONS WITH RESPECT TO SUCH SOFTWARE, WHETHER EXPRESS,
+ * IMPLIED, STATUTORY OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY IMPLIED WARRANTIES OF TITLE,
+ * NON-INFRINGEMENT, MERCHANTABILITY, SATISFACTROY QUALITY, ACCURACY OR FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.
+ *
+ * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  * Copyright (C) 2015 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +42,7 @@
 #include <stdint.h>
 #include <xf86drmMode.h>
 
-#include <cutils/log.h>
+#include <log/log.h>
 
 namespace android {
 
@@ -40,11 +60,8 @@ DrmCrtc::DrmCrtc(DrmResources *drm, drmModeCrtcPtr c, unsigned pipe)
       mode_valid_(c->mode_valid),
       crtc_(c) {
 
-	ALOGD("DrmCrtc::DrmCrtc() id_=%d, pipe_=%d, display_=%d, width_=%d, height_=%d, b_afbc_=%d",
+    ALOGD("DrmCrtc::DrmCrtc() id_=%d, pipe_=%d, display_=%d, width_=%d, height_=%d, b_afbc_=%d",
          id_, pipe_, display_, width_, height_, b_afbc_);
-         
-     if(pipe_ ==1)
-		abort();
 }
 
 int DrmCrtc::Init() {
@@ -156,14 +173,14 @@ const DrmProperty &DrmCrtc::alpha_scale_property() const {
 */
 void DrmCrtc::dump_crtc(std::ostringstream *out) const
 {
-	*out << crtc_->crtc_id << "\t"
-	     << crtc_->buffer_id << "\t"
-	     << "(" << crtc_->x << "," << crtc_->y << ")\t("
-	     << crtc_->width << "x" << crtc_->height << ")\n";
+    *out << crtc_->crtc_id << "\t"
+         << crtc_->buffer_id << "\t"
+         << "(" << crtc_->x << "," << crtc_->y << ")\t("
+         << crtc_->width << "x" << crtc_->height << ")\n";
 
-	drm_->dump_mode(&crtc_->mode, out);
+    drm_->dump_mode(&crtc_->mode, out);
 
-	drm_->DumpCrtcProperty(*this,out);
+    drm_->DumpCrtcProperty(*this,out);
 }
 
 }

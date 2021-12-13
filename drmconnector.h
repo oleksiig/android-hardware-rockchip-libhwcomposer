@@ -1,4 +1,24 @@
 /*
+ * Copyright (C) 2018 Fuzhou Rockchip Electronics Co.Ltd.
+ *
+ * Modification based on code covered by the Apache License, Version 2.0 (the "License").
+ * You may not use this software except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS TO YOU ON AN "AS IS" BASIS
+ * AND ANY AND ALL WARRANTIES AND REPRESENTATIONS WITH RESPECT TO SUCH SOFTWARE, WHETHER EXPRESS,
+ * IMPLIED, STATUTORY OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY IMPLIED WARRANTIES OF TITLE,
+ * NON-INFRINGEMENT, MERCHANTABILITY, SATISFACTROY QUALITY, ACCURACY OR FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.
+ *
+ * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  * Copyright (C) 2015 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,6 +60,7 @@ class DrmConnector {
   int Init();
 
   uint32_t id() const;
+  uint32_t type_id() const;
 
   int display() const;
   void set_display(int display);
@@ -85,12 +106,15 @@ class DrmConnector {
   drmModeConnection state() const;
   drmModeConnection raw_state() const;
   void force_disconnect(bool force);
+  int priority() const;
+  void set_priority(int priority);
 
   uint32_t get_type() { return type_; }
   int possible_displays() { return possible_displays_; }
 
-  bool isSupportSt2084() { return bSupportSt2084_; }
-  bool is_hdmi_support_hdr() const;
+  //bool isSupportSt2084() { return bSupportSt2084_; }
+  //bool isSupportHLG() { return bSupportHLG_; }
+  //bool is_hdmi_support_hdr() const;
 
   uint32_t mm_width() const;
   uint32_t mm_height() const;
@@ -103,10 +127,12 @@ class DrmConnector {
   DrmResources *drm_;
 
   uint32_t id_;
+  uint32_t type_id_;
   DrmEncoder *encoder_;
   int display_;
 
   uint32_t type_;
+  int priority_;
   drmModeConnection state_;
   bool force_disconnect_;
 
@@ -134,7 +160,8 @@ class DrmConnector {
   std::vector<DrmEncoder *> possible_encoders_;
   uint32_t possible_displays_;
 
-  bool bSupportSt2084_;
+//  bool bSupportSt2084_;
+//  bool bSupportHLG_;
 
   drmModeConnectorPtr connector_;
 };

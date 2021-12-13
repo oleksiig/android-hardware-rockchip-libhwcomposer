@@ -1,4 +1,24 @@
 /*
+ * Copyright (C) 2018 Fuzhou Rockchip Electronics Co.Ltd.
+ *
+ * Modification based on code covered by the Apache License, Version 2.0 (the "License").
+ * You may not use this software except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS TO YOU ON AN "AS IS" BASIS
+ * AND ANY AND ALL WARRANTIES AND REPRESENTATIONS WITH RESPECT TO SUCH SOFTWARE, WHETHER EXPRESS,
+ * IMPLIED, STATUTORY OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY IMPLIED WARRANTIES OF TITLE,
+ * NON-INFRINGEMENT, MERCHANTABILITY, SATISFACTROY QUALITY, ACCURACY OR FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.
+ *
+ * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  * Copyright (C) 2015 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +35,6 @@
  */
 
 #define LOG_TAG "hwc-drm-plane"
-#define LOG_NDEBUG 0
 
 #include "drmplane.h"
 #include "drmresources.h"
@@ -23,8 +42,7 @@
 #include <cinttypes>
 #include <errno.h>
 #include <stdint.h>
-
-#include <cutils/log.h>
+#include <log/log.h>
 #include <xf86drmMode.h>
 
 namespace android {
@@ -138,23 +156,23 @@ int DrmPlane::Init() {
   ret = drm_->GetPlaneProperty(*this, "COLOR_SPACE", &colorspace_property_);
   if (ret)
     ALOGV("Could not get colorspace property");
-
-  ret = drm_->GetPlaneProperty(*this, "ZPOS", &zpos_property_);
-  if (ret)
-    ALOGV("Could not get ZPOS property");
-
-  ret = drm_->GetPlaneProperty(*this, "SHARE_FLAGS", &area_id_property_);
-  if (ret)
-    ALOGV("Could not get AREA_ID property");
-
-  ret = drm_->GetPlaneProperty(*this, "SHARE_ID", &share_id_property_);
-  if (ret)
-    ALOGV("Could not get SHARE_ID property");
-
-  ret = drm_->GetPlaneProperty(*this, "FEATURE", &feature_property_);
-  if (ret)
-    ALOGV("Could not get FEATURE property");
 */
+    ret = drm_->GetPlaneProperty(*this, "ZPOS", &zpos_property_);
+    if (ret)
+        ALOGW("Could not get ZPOS property");
+
+    ret = drm_->GetPlaneProperty(*this, "SHARE_FLAGS", &area_id_property_);
+    if (ret)
+        ALOGW("Could not get AREA_ID property");
+
+    ret = drm_->GetPlaneProperty(*this, "SHARE_ID", &share_id_property_);
+    if (ret)
+        ALOGW("Could not get SHARE_ID property");
+
+    ret = drm_->GetPlaneProperty(*this, "FEATURE", &feature_property_);
+    if (ret)
+        ALOGW("Could not get FEATURE property");
+
     b_reserved_= false;
     b_use_ = false;
     b_yuv_ = false;
@@ -182,7 +200,7 @@ int DrmPlane::Init() {
    // feature_property_.value(&afbdc);
     b_afbdc_ = false;//(afbdc == 0x10)?true:false;
     //if(0xFF == afbdc)
-      b_afbc_prop_ = false;
+    b_afbc_prop_ = false;
    // else
      // b_afbc_prop_ = true;
 
@@ -240,27 +258,27 @@ const DrmProperty &DrmPlane::src_w_property() const {
 const DrmProperty &DrmPlane::src_h_property() const {
   return src_h_property_;
 }
-/*
-const DrmProperty &DrmPlane::rotation_property() const {
-  return rotation_property_;
-}
 
-const DrmProperty &DrmPlane::eotf_property() const {
-  return eotf_property_;
-}
+//const DrmProperty &DrmPlane::rotation_property() const {
+//  return rotation_property_;
+//}
 
-const DrmProperty &DrmPlane::blend_mode_property() const {
-  return blend_mode_property_;
-}
+//const DrmProperty &DrmPlane::eotf_property() const {
+//  return eotf_property_;
+//}
 
-const DrmProperty &DrmPlane::colorspace_property() const {
-  return colorspace_property_;
-}
+//const DrmProperty &DrmPlane::blend_mode_property() const {
+//  return blend_mode_property_;
+//}
+
+//const DrmProperty &DrmPlane::colorspace_property() const {
+//  return colorspace_property_;
+//}
 
 const DrmProperty &DrmPlane::alpha_property() const {
   return alpha_property_;
 }
-*/
+
 bool DrmPlane::get_scale(){
     return b_scale_;
 }
@@ -302,7 +320,7 @@ void DrmPlane::set_use(bool b_use)
 {
     b_use_ = b_use;
 }
-/*
+
 const DrmProperty &DrmPlane::zpos_property() const {
   return zpos_property_;
 }
@@ -318,7 +336,7 @@ const DrmProperty &DrmPlane::share_id_property() const {
 const DrmProperty &DrmPlane::feature_property() const {
   return feature_property_;
 }
-*/
+
 bool DrmPlane::is_reserved(){
   return b_reserved_;
 }

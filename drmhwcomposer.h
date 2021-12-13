@@ -1,4 +1,24 @@
 /*
+ * Copyright (C) 2018 Fuzhou Rockchip Electronics Co.Ltd.
+ *
+ * Modification based on code covered by the Apache License, Version 2.0 (the "License").
+ * You may not use this software except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS TO YOU ON AN "AS IS" BASIS
+ * AND ANY AND ALL WARRANTIES AND REPRESENTATIONS WITH RESPECT TO SUCH SOFTWARE, WHETHER EXPRESS,
+ * IMPLIED, STATUTORY OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY IMPLIED WARRANTIES OF TITLE,
+ * NON-INFRINGEMENT, MERCHANTABILITY, SATISFACTROY QUALITY, ACCURACY OR FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.
+ *
+ * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  * Copyright (C) 2015 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,31 +42,37 @@
 
 #include <hardware/hardware.h>
 #include <hardware/hwcomposer.h>
+
 #include "autofd.h"
 #include "separate_rects.h"
 #include "drmhwcgralloc.h"
 #include "hwc_debug.h"
+
 #if (RK_RGA_COMPSITE_SYNC | RK_RGA_PREPARE_ASYNC)
 #include <RockchipRga.h>
 #endif
 
 /*hwc version*/
-#define GHWC_VERSION                    "0.47"
+#define GHWC_VERSION                    "0.63"
 
 /* hdr usage */
 /*usage & 0x0F000000
   0x1000000 bt2020
-  0x2000000 hdr10
+  0x2000000 st2084
   0x3000000 hlg
   0x4000000 dobly version
  */
-#define HDRUSAGE                                       0x2000000
+#define HDR_ST2084_USAGE                                       0x2000000
+#define HDR_HLG_USAGE                                          0x3000000
+
 
 /* msleep for hotplug in event */
 #define HOTPLUG_MSLEEP			(200)
 
 // hdmi status path
-#define HDMI_STATUS_PATH		"/sys/devices/platform/display-subsystem/drm/card0/card0-HDMI-A-1/status"
+#define HDMI_STATUS_PATH    "/sys/devices/platform/display-subsystem/drm/card0/card0-HDMI-A-1/status"
+#define DP_STATUS_PATH      "/sys/devices/platform/display-subsystem/drm/card0/card0-DP-1/status"
+
 
 struct hwc_import_context;
 
@@ -82,6 +108,15 @@ namespace android {
 
 #define BOOT_GLES_COUNT  (5)
 
+typedef
+enum tagMode3D
+{
+	NON_3D = 0,
+	H_3D=1,
+	V_3D=2,
+	FPS_3D=8,
+} Mode3D;
+
 class Importer;
 
 class DrmHwcBuffer {
@@ -115,7 +150,7 @@ class DrmHwcBuffer {
   void Clear();
 
 #if RK_VIDEO_SKIP_LINE
-  int ImportBuffer(buffer_handle_t handle, Importer *importer, bool bSkipLine);
+  int ImportBuffer(buffer_handle_t handle, Importer *importer, uint32_t SkipLine);
 #else
   int ImportBuffer(buffer_handle_t handle, Importer *importer);
 #endif
@@ -167,21 +202,41 @@ class DrmHwcNativeHandle {
 template <typename T>
 using DrmHwcRect = separate_rects::Rect<T>;
 
+#if DRM_DRIVER_VERSION==2
+//Drm driver version is 2.0.0 use these.
 enum DrmHwcTransform {
-  kIdentity = 0,
-  kFlipH = 1 << 0,
-  kFlipV = 1 << 1,
-  kRotate90 = 1 << 2,
-  kRotate180 = 1 << 3,
-  kRotate270 = 1 << 4,
-  kRotate0 = 1 << 5
+    kIdentity = 0,
+    kRotate0 = 1 << 0,
+    kRotate90 = 1 << 1,
+    kRotate180 = 1 << 2,
+    kRotate270 = 1 << 3,
+    kFlipH = 1 << 4,
+    kFlipV = 1 << 5,
 };
+#else
+//Drm driver version is 1.0.0 use these.
+enum DrmHwcTransform {
+    kIdentity = 0,
+    kFlipH = 1 << 0,
+    kFlipV = 1 << 1,
+    kRotate90 = 1 << 2,
+    kRotate180 = 1 << 3,
+    kRotate270 = 1 << 4,
+    kRotate0 = 1 << 5
+};
+#endif
 
 enum class DrmHwcBlending : int32_t {
   kNone = HWC_BLENDING_NONE,
   kPreMult = HWC_BLENDING_PREMULT,
   kCoverage = HWC_BLENDING_COVERAGE,
 };
+
+typedef enum DrmGenericImporterFlag {
+  NO_FLAG = 0,
+  VOP_NOT_SUPPORT_ALPHA_SCALE = 1,
+}DrmGenericImporterFlag_t;
+
 
 const char *BlendingToString(DrmHwcBlending blending);
 
@@ -216,19 +271,19 @@ struct DrmHwcLayer {
 
 #if (RK_RGA_COMPSITE_SYNC | RK_RGA_PREPARE_ASYNC)
   bool is_rotate_by_rga;
-  buffer_handle_t rga_handle;
+  buffer_handle_t rga_handle = NULL;
 #endif
   float h_scale_mul;
   float v_scale_mul;
 #if RK_VIDEO_SKIP_LINE
-  bool bSkipLine;
+  uint32_t SkipLine;
 #endif
   bool bClone_;
   bool bFbTarget_;
   bool bUse;
   bool bMix;
   int stereo;
-  hwc_layer_1_t *raw_sf_layer;
+  hwc_layer_1_t *raw_sf_layer = NULL;
   int format;
   int width;
   int height;
@@ -240,14 +295,15 @@ struct DrmHwcLayer {
   uint16_t eotf;
   std::string name;
   size_t index;
-  hwc_layer_1_t *mlayer;
+  hwc_layer_1_t *mlayer = NULL;
   hwc_rect_t  rect_merge;
+
 
   int ImportBuffer(struct hwc_context_t *ctx, hwc_layer_1_t *sf_layer, Importer *importer);
   int InitFromHwcLayer(struct hwc_context_t *ctx, int display, hwc_layer_1_t *sf_layer, Importer *importer,
                         const gralloc_module_t *gralloc, bool bClone);
 
-void dump_drm_layer(int index, std::ostringstream *out) const;
+  void dump_drm_layer(int index, std::ostringstream *out) const;
 
   buffer_handle_t get_usable_handle() const {
     return handle.get() != NULL ? handle.get() : sf_handle;

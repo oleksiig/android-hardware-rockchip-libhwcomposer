@@ -1,4 +1,24 @@
 /*
+ * Copyright (C) 2018 Fuzhou Rockchip Electronics Co.Ltd.
+ *
+ * Modification based on code covered by the Apache License, Version 2.0 (the "License").
+ * You may not use this software except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS TO YOU ON AN "AS IS" BASIS
+ * AND ANY AND ALL WARRANTIES AND REPRESENTATIONS WITH RESPECT TO SUCH SOFTWARE, WHETHER EXPRESS,
+ * IMPLIED, STATUTORY OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY IMPLIED WARRANTIES OF TITLE,
+ * NON-INFRINGEMENT, MERCHANTABILITY, SATISFACTROY QUALITY, ACCURACY OR FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.
+ *
+ * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  * Copyright (C) 2015 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,10 +59,10 @@
 // One for the front, one for the back, and one for cases where we need to
 // squash a frame that the hw can't display with hw overlays.
 #define DRM_DISPLAY_BUFFERS             (3)
-#define MaxRgaBuffers                   (3)
+#define MaxRgaBuffers                   (5)
 #define RGA_MAX_WIDTH                   (4096)
 #define RGA_MAX_HEIGHT                  (2304)
-#define VOP_BW_PATH			"/sys/class/devfreq/dmc/vop_bandwidth"
+#define VOP_BW_PATH                     "/sys/class/devfreq/dmc/vop_bandwidth"
 #define OVERSCAN_MIN_VALUE              (80)
 #define OVERSCAN_MAX_VALUE              (100)
 
@@ -169,6 +189,7 @@ class DrmDisplayCompositor {
   int SquashFrame(DrmDisplayComposition *src, DrmDisplayComposition *dst);
   int ApplyDpms(DrmDisplayComposition *display_comp);
   int DisablePlanes(DrmDisplayComposition *display_comp);
+  void SingalCompsition(std::unique_ptr<DrmDisplayComposition> composition);
 
   void ApplyFrame(std::unique_ptr<DrmDisplayComposition> composition,
                   int status);
@@ -189,18 +210,26 @@ class DrmDisplayCompositor {
   bool initialized_;
   bool active_;
   bool use_hw_overlays_;
+  /*
+   *  Currently, ClearDisplay only to clear composition in DrmCompositorWorker,
+   *  but sometime some compositions exist in FrameWorker, so, we must set
+   *  clearDisplay_ to notify FrameWorker to clear compositions.
+   */
+  bool clearDisplay_;
 
   mutable pthread_mutex_t mode_lock_;
   ModeState mode_;
 
   int framebuffer_index_;
   DrmFramebuffer framebuffers_[DRM_DISPLAY_BUFFERS];
+
 #if RK_RGA_COMPSITE_SYNC
   int rgaBuffer_index_;
   DrmRgaBuffer rgaBuffers_[MaxRgaBuffers];
   RockchipRga& mRga_;
   bool mUseRga_;
 #endif
+
   std::unique_ptr<GLWorkerCompositor> pre_compositor_;
 
   SquashState squash_state_;
@@ -218,6 +247,6 @@ class DrmDisplayCompositor {
 
   const gralloc_module_t *gralloc_;
 };
-}
+} /* namespace android */
 
 #endif  // ANDROID_DRM_DISPLAY_COMPOSITOR_H_

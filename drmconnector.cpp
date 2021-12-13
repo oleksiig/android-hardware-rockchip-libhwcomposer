@@ -1,4 +1,24 @@
 /*
+ * Copyright (C) 2018 Fuzhou Rockchip Electronics Co.Ltd.
+ *
+ * Modification based on code covered by the Apache License, Version 2.0 (the "License").
+ * You may not use this software except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS TO YOU ON AN "AS IS" BASIS
+ * AND ANY AND ALL WARRANTIES AND REPRESENTATIONS WITH RESPECT TO SUCH SOFTWARE, WHETHER EXPRESS,
+ * IMPLIED, STATUTORY OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY IMPLIED WARRANTIES OF TITLE,
+ * NON-INFRINGEMENT, MERCHANTABILITY, SATISFACTROY QUALITY, ACCURACY OR FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.
+ *
+ * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  * Copyright (C) 2015 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,8 +42,19 @@
 #include <errno.h>
 #include <stdint.h>
 
+#ifdef ANDROID_P
+#include <log/log.h>
+#else
 #include <cutils/log.h>
+#endif
+
 #include <xf86drmMode.h>
+
+#if DRM_DRIVER_VERSION == 2
+#define HDR_METADATA_PROPERTY "HDR_OUTPUT_METADATA"
+#else
+#define HDR_METADATA_PROPERTY "HDR_SOURCE_METADATA"
+#endif
 
 namespace android {
 
@@ -32,9 +63,11 @@ DrmConnector::DrmConnector(DrmResources *drm, drmModeConnectorPtr c,
                            std::vector<DrmEncoder *> &possible_encoders)
     : drm_(drm),
       id_(c->connector_id),
+      type_id_(c->connector_type_id),
       encoder_(current_encoder),
       display_(-1),
       type_(c->connector_type),
+      priority_(-1),
       state_(c->connection),
       force_disconnect_(false),
       mm_width_(c->mmWidth),
@@ -55,57 +88,69 @@ int DrmConnector::Init() {
     ALOGE("Could not get CRTC_ID property\n");
     return ret;
   }
-/*
+
   ret = drm_->GetConnectorProperty(*this, "brightness", &brightness_id_property_);
   if (ret)
-    ALOGV("Could not get brightness property\n");
+    ALOGW("Could not get brightness property\n");
 
   ret = drm_->GetConnectorProperty(*this, "contrast", &contrast_id_property_);
   if (ret)
-    ALOGV("Could not get contrast property\n");
+    ALOGW("Could not get contrast property\n");
 
   ret = drm_->GetConnectorProperty(*this, "saturation", &saturation_id_property_);
   if (ret)
-    ALOGV("Could not get saturation property\n");
+    ALOGW("Could not get saturation property\n");
 
   ret = drm_->GetConnectorProperty(*this, "hue", &hue_id_property_);
   if (ret)
-    ALOGV("Could not get hue property\n");
+    ALOGW("Could not get hue property\n");
 
-  ret = drm_->GetConnectorProperty(*this, "HDR_SOURCE_METADATA", &hdr_metadata_property_);
+  ret = drm_->GetConnectorProperty(*this, HDR_METADATA_PROPERTY, &hdr_metadata_property_);
   if (ret)
-    ALOGV("Could not get hdr source metadata property\n");
+    ALOGW("Could not get hdr source metadata property\n");
 
   ret = drm_->GetConnectorProperty(*this, "HDR_PANEL_METADATA", &hdr_panel_property_);
   if (ret)
-    ALOGV("Could not get hdr panel metadata property\n");
+    ALOGW("Could not get hdr panel metadata property\n");
 
-  ret = drm_->GetConnectorProperty(*this, "hdmi_output_colorimetry", &hdmi_output_colorimetry_);
-  if (ret)
-    ALOGV("Could not get hdmi_output_colorimetry property\n");
+  if (type_ == DRM_MODE_CONNECTOR_HDMIA) {
+    ret = drm_->GetConnectorProperty(*this, "hdmi_output_colorimetry", &hdmi_output_colorimetry_);
+    if (ret)
+      ALOGW("Could not get hdmi_output_colorimetry property\n");
 
-  ret = drm_->GetConnectorProperty(*this, "hdmi_output_format", &hdmi_output_format_);
-  if (ret) {
-    ALOGV("Could not get hdmi_output_format property\n");
+    ret = drm_->GetConnectorProperty(*this, "hdmi_output_format", &hdmi_output_format_);
+    if (ret)
+      ALOGW("Could not get hdmi_output_format property\n");
+
+    ret = drm_->GetConnectorProperty(*this, "hdmi_output_depth", &hdmi_output_depth_);
+    if (ret)
+      ALOGW("Could not get hdmi_output_depth property\n");
   }
 
-  ret = drm_->GetConnectorProperty(*this, "hdmi_output_depth", &hdmi_output_depth_);
-  if (ret) {
-   ALOGV("Could not get hdmi_output_depth property\n");
-  }
-*/
-  bSupportSt2084_ = drm_->is_hdr_panel_support_st2084(this);
+  //bSupportSt2084_ = drm_->is_hdr_panel_support_st2084(this);
+  //bSupportHLG_    = drm_->is_hdr_panel_support_HLG(this);
 
   return 0;
 }
-
+/*
 bool DrmConnector::is_hdmi_support_hdr() const
 {
-    return hdr_metadata_property_.id() && bSupportSt2084_;
+    return (hdr_metadata_property_.id() && bSupportSt2084_) || (hdr_metadata_property_.id() && bSupportHLG_);
 }
-
+*/
 uint32_t DrmConnector::id() const {
   return id_;
+}
+
+uint32_t DrmConnector::type_id() const {
+  return type_id_;
+}
+
+int DrmConnector::priority() const{
+  return priority_;
+}
+void DrmConnector::set_priority(int priority){
+  priority_ = priority;
 }
 
 int DrmConnector::display() const {
@@ -124,7 +169,8 @@ bool DrmConnector::built_in() const {
   return type_ == DRM_MODE_CONNECTOR_LVDS || type_ == DRM_MODE_CONNECTOR_eDP ||
          type_ == DRM_MODE_CONNECTOR_DSI ||
          type_ == DRM_MODE_CONNECTOR_VIRTUAL ||
-         type_ == DRM_MODE_CONNECTOR_TV;
+         type_ == DRM_MODE_CONNECTOR_TV ||
+         type_ == DRM_MODE_CONNECTOR_DPI;
 }
 
 const DrmMode &DrmConnector::best_mode() const {
@@ -142,34 +188,68 @@ int DrmConnector::UpdateModes() {
   }
 
   //When Plug-in/Plug-out TV panel,some Property of the connector will need be updated.
-  bSupportSt2084_ = drm_->is_hdr_panel_support_st2084(this);
+  //bSupportSt2084_ = drm_->is_hdr_panel_support_st2084(this);
 
-	state_ = c->connection;
-	if (!c->count_modes)
-		state_ = DRM_MODE_DISCONNECTED;
-    
-	// Get original mode from connector
-	std::vector<DrmMode> new_raw_modes;
-	for (int i = 0; i < c->count_modes; ++i)
-	{
-		bool exists = false;
-		for (const DrmMode &mode : modes_) {
-			if (mode == c->modes[i]) {
-				new_raw_modes.push_back(mode);
-				exists = true;
-				break;
-			}
-		}
-		if (exists)
-			continue;
+  state_ = c->connection;
+  if (!c->count_modes)
+    state_ = DRM_MODE_DISCONNECTED;
 
-		DrmMode m(&c->modes[i]);
-		m.set_id(drm_->next_mode_id());
-		new_raw_modes.push_back(m);
-	}
-	
-	modes_.swap(new_raw_modes);
-	return 0;
+  std::vector<DrmMode> new_modes;
+  for (int i = 0; i < c->count_modes; ++i) {
+    bool exists = false;
+    for (const DrmMode &mode : modes_) {
+      if (mode == c->modes[i]) {
+        if(type_ == DRM_MODE_CONNECTOR_HDMIA || type_ == DRM_MODE_CONNECTOR_DisplayPort)
+        {
+            //filter mode by /system/usr/share/resolution_white.xml.
+            if(drm_->mode_verify(mode))
+            {
+                new_modes.push_back(mode);
+                exists = true;
+                break;
+            }
+        }
+        else
+        {
+            new_modes.push_back(mode);
+            exists = true;
+            break;
+        }
+      }
+    }
+    if (exists)
+      continue;
+
+    DrmMode m(&c->modes[i]);
+    if ((type_ == DRM_MODE_CONNECTOR_HDMIA || type_ == DRM_MODE_CONNECTOR_DisplayPort) && !drm_->mode_verify(m))
+      continue;
+
+    m.set_id(drm_->next_mode_id());
+    new_modes.push_back(m);
+  }
+  modes_.swap(new_modes);
+
+  //Get original mode from connector
+  std::vector<DrmMode> new_raw_modes;
+  for (int i = 0; i < c->count_modes; ++i) {
+    bool exists = false;
+    for (const DrmMode &mode : modes_) {
+      if (mode == c->modes[i]) {
+        new_raw_modes.push_back(mode);
+        exists = true;
+        break;
+      }
+    }
+    if (exists)
+      continue;
+
+    DrmMode m(&c->modes[i]);
+    m.set_id(drm_->next_mode_id());
+    new_raw_modes.push_back(m);
+  }
+  raw_modes_.swap(new_raw_modes);
+
+  return 0;
 }
 
 void DrmConnector::update_size(int w, int h) {

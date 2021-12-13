@@ -1,4 +1,24 @@
 /*
+ * Copyright (C) 2018 Fuzhou Rockchip Electronics Co.Ltd.
+ *
+ * Modification based on code covered by the Apache License, Version 2.0 (the "License").
+ * You may not use this software except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS TO YOU ON AN "AS IS" BASIS
+ * AND ANY AND ALL WARRANTIES AND REPRESENTATIONS WITH RESPECT TO SUCH SOFTWARE, WHETHER EXPRESS,
+ * IMPLIED, STATUTORY OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY IMPLIED WARRANTIES OF TITLE,
+ * NON-INFRINGEMENT, MERCHANTABILITY, SATISFACTROY QUALITY, ACCURACY OR FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.
+ *
+ * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  * Copyright (C) 2015 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,14 +41,18 @@
 #include "drmplane.h"
 #include "drmresources.h"
 #include "platform.h"
+#include "hwc_rockchip.h"
+
+#include "gralloc_drm.h"
 
 #include <stdlib.h>
 
 #include <algorithm>
 #include <unordered_set>
 
-#include <cutils/log.h>
-#include <sw_sync.h>
+#include <log/log.h>
+#include <libsync/sw_sync.h>
+
 #include <sync/sync.h>
 #include <xf86drmMode.h>
 
@@ -329,39 +353,35 @@ int DrmDisplayComposition::CreateAndAssignReleaseFences() {
   }
   timeline_pre_comp_done_ = timeline_;
 
-#if ENABLE_RELEASE_FENCE
-  char acBuf[50];
-  for (DrmHwcLayer *layer : comp_layers) {
-    if (!layer->release_fence)
-    {
-      continue;
-    }
-#if RK_VR
-    if(layer->release_fence.get() > -1 && (layer->gralloc_buffer_usage & 0x08000000))
-    {
-        ALOGD_IF(log_level(DBG_DEBUG),">>>close releaseFenceFd:%d,layername=%s",
-                    layer->release_fence.get(),layer->name.c_str());
-        close(layer->release_fence.get());
-        layer->release_fence.Set(-1);
-    }
-    else
-#endif
-    {
+  char value[PROPERTY_VALUE_MAX];
+  property_get( PROPERTY_TYPE ".hwc.disable_releaseFence", value, "0");
+  if(atoi(value) == 0) {
+      char acBuf[50];
+      for (DrmHwcLayer *layer : comp_layers) {
+        if (!layer->release_fence)
+        {
+          continue;
+        }
+
         sprintf(acBuf,"frame-%d",layer->frame_no);
         int ret = layer->release_fence.Set(CreateNextTimelineFence(acBuf));
         if (ret < 0)
         {
-            ALOGE("creat release fence failed ret=%d,%s",ret,strerror(errno));
-          return ret;
+            sprintf(acBuf,"frame-%d",layer->frame_no);
+            int ret = layer->release_fence.Set(CreateNextTimelineFence(acBuf));
+            if (ret < 0)
+            {
+                ALOGE("creat release fence failed ret=%d,%s",ret,strerror(errno));
+                return ret;
+            }
         }
     }
   }
-#endif
 
   return 0;
 }
 
-static bool is_rec1_intersect_rec2(DrmHwcRect<int>* rec1,DrmHwcRect<int>* rec2)
+static bool is_rec1_intersect_rec2(DrmHwcRect<int>* rec1, DrmHwcRect<int>* rec2)
 {
     int iMaxLeft,iMaxTop,iMinRight,iMinBottom;
     ALOGD_IF(log_level(DBG_DEBUG),"is_not_intersect: rec1[%d,%d,%d,%d],rec2[%d,%d,%d,%d]",rec1->left,rec1->top,
@@ -382,10 +402,6 @@ static bool is_rec1_intersect_rec2(DrmHwcRect<int>* rec1,DrmHwcRect<int>* rec2)
 
 static bool is_layer_combine(DrmHwcLayer * layer_one,DrmHwcLayer * layer_two)
 {
-#ifdef TARGET_BOARD_PLATFORM_RK3328
-        ALOGD_IF(log_level(DBG_SILENT),"rk3328 can't support multi region");
-        return false;
-#endif
     //multi region only support RGBA888 RGBX8888 RGB888 565 BGRA888
     if(layer_one->format >= HAL_PIXEL_FORMAT_YCrCb_NV12
         || layer_two->format >= HAL_PIXEL_FORMAT_YCrCb_NV12
@@ -567,7 +583,7 @@ int DrmDisplayComposition::Plan(SquashState *squash,
   // want to plan a precomposition layer that will be comprised of the already
   // squashed layers).
   std::map<size_t, DrmHwcLayer *> to_composite;
-  //bool use_squash_framebuffer = false;
+  bool use_squash_framebuffer = false;
 
   if (!crtc_) {
     ALOGE("can't not plan when crtc is NULL\n");
@@ -645,6 +661,7 @@ int DrmDisplayComposition::Plan(SquashState *squash,
   }
 #else
     UN_USED(squash);
+    UN_USED(use_squash_framebuffer);
     for (size_t i = 0; i < layers_.size(); ++i)
       to_composite.emplace(std::make_pair(i, &layers_[i]));
 #endif

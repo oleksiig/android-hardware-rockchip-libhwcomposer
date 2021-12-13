@@ -1,9 +1,47 @@
+/*
+ * Copyright (C) 2018 Fuzhou Rockchip Electronics Co.Ltd.
+ *
+ * Modification based on code covered by the Apache License, Version 2.0 (the "License").
+ * You may not use this software except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS TO YOU ON AN "AS IS" BASIS
+ * AND ANY AND ALL WARRANTIES AND REPRESENTATIONS WITH RESPECT TO SUCH SOFTWARE, WHETHER EXPRESS,
+ * IMPLIED, STATUTORY OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY IMPLIED WARRANTIES OF TITLE,
+ * NON-INFRINGEMENT, MERCHANTABILITY, SATISFACTROY QUALITY, ACCURACY OR FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.
+ *
+ * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Copyright (C) 2015 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #define LOG_TAG "hwc_rk"
 
 // #define LOG_NDEBUG 0
 #include <log/log.h>
 
 #include <inttypes.h>
+
+#include <gralloc_drm.h>
 
 #include "hwc_rockchip.h"
 #include "hwc_util.h"
@@ -69,7 +107,7 @@ int hwc_static_screen_opt_set(bool isGLESComp)
 {
     struct itimerval tv = {{0,0},{0,0}};
     if (!isGLESComp) {
-        int interval_value = hwc_get_int_property("sys.vwb.time", "2500");
+        int interval_value = hwc_get_int_property( PROPERTY_TYPE ".vwb.time", "2500");
         interval_value = interval_value > 5000? 5000:interval_value;
         interval_value = interval_value < 250? 250:interval_value;
         TimeInt2Obj(interval_value,&tv.it_value);
@@ -83,13 +121,15 @@ int hwc_static_screen_opt_set(bool isGLESComp)
 }
 #endif
 
-
+#if 0
 #ifdef USE_HWC2
 int hwc_get_handle_displayStereo(const gralloc_module_t *gralloc, buffer_handle_t hnd)
 {
     int ret = 0;
     int op = GRALLOC_MODULE_PERFORM_GET_RK_ASHMEM;
     struct rk_ashmem_t rk_ashmem;
+
+    memset(&rk_ashmem,0x00,sizeof(struct rk_ashmem_t));
 
     if(gralloc && gralloc->perform)
         ret = gralloc->perform(gralloc, op, hnd, &rk_ashmem);
@@ -109,6 +149,8 @@ int hwc_set_handle_displayStereo(const gralloc_module_t *gralloc, buffer_handle_
     int ret = 0;
     int op = GRALLOC_MODULE_PERFORM_GET_RK_ASHMEM;
     struct rk_ashmem_t rk_ashmem;
+
+    memset(&rk_ashmem,0x00,sizeof(struct rk_ashmem_t));
 
     if(gralloc && gralloc->perform)
         ret = gralloc->perform(gralloc, op, hnd, &rk_ashmem);
@@ -147,6 +189,8 @@ int hwc_get_handle_alreadyStereo(const gralloc_module_t *gralloc, buffer_handle_
     int op = GRALLOC_MODULE_PERFORM_GET_RK_ASHMEM;
     struct rk_ashmem_t rk_ashmem;
 
+    memset(&rk_ashmem,0x00,sizeof(struct rk_ashmem_t));
+
     if(gralloc && gralloc->perform)
         ret = gralloc->perform(gralloc, op, hnd, &rk_ashmem);
     else
@@ -165,6 +209,8 @@ int hwc_set_handle_alreadyStereo(const gralloc_module_t *gralloc, buffer_handle_
     int ret = 0;
     int op = GRALLOC_MODULE_PERFORM_GET_RK_ASHMEM;
     struct rk_ashmem_t rk_ashmem;
+
+    memset(&rk_ashmem,0x00,sizeof(struct rk_ashmem_t));
 
     if(gralloc && gralloc->perform)
         ret = gralloc->perform(gralloc, op, hnd, &rk_ashmem);
@@ -197,6 +243,9 @@ exit:
     return ret;
 }
 
+#endif
+#endif // 0
+
 int hwc_get_handle_layername(const gralloc_module_t *gralloc, buffer_handle_t hnd, char* layername, unsigned long len)
 {
     int ret = 0;
@@ -206,6 +255,8 @@ int hwc_get_handle_layername(const gralloc_module_t *gralloc, buffer_handle_t hn
 
     if(!layername)
         return -EINVAL;
+
+    memset(&rk_ashmem,0x00,sizeof(struct rk_ashmem_t));
 
     if(gralloc && gralloc->perform)
         ret = gralloc->perform(gralloc, op, hnd, &rk_ashmem);
@@ -235,6 +286,8 @@ int hwc_set_handle_layername(const gralloc_module_t *gralloc, buffer_handle_t hn
 
     if(!layername)
         return -EINVAL;
+
+    memset(&rk_ashmem,0x00,sizeof(struct rk_ashmem_t));
 
     if(gralloc && gralloc->perform)
         ret = gralloc->perform(gralloc, op, hnd, &rk_ashmem);
@@ -266,7 +319,6 @@ int hwc_set_handle_layername(const gralloc_module_t *gralloc, buffer_handle_t hn
 exit:
     return ret;
 }
-#endif
 
 int hwc_get_handle_width(const gralloc_module_t *gralloc, buffer_handle_t hnd)
 {
@@ -471,6 +523,12 @@ int hwc_get_handle_attibute(const gralloc_module_t *gralloc, buffer_handle_t hnd
 */
 int hwc_get_handle_primefd(const gralloc_module_t *gralloc, buffer_handle_t hnd)
 {
+#if RK_PER_MODE
+    struct gralloc_drm_handle_t* drm_hnd = (struct gralloc_drm_handle_t *)hnd;
+
+    UN_USED(gralloc);
+    return drm_hnd->prime_fd;
+#else
     int ret = 0;
     int op = GRALLOC_MODULE_PERFORM_GET_HADNLE_PRIME_FD;
     int fd = -1;
@@ -486,9 +544,9 @@ int hwc_get_handle_primefd(const gralloc_module_t *gralloc, buffer_handle_t hnd)
     }
 
     return fd;
+#endif
 }
 
-#if RK_DRM_GRALLOC
 uint32_t hwc_get_handle_phy_addr(const gralloc_module_t *gralloc, buffer_handle_t hnd)
 {
     int ret = 0;
@@ -507,7 +565,6 @@ uint32_t hwc_get_handle_phy_addr(const gralloc_module_t *gralloc, buffer_handle_
 
     return phy_addr;
 }
-#endif
 
 uint32_t hwc_get_layer_colorspace(hwc_layer_1_t *layer)
 {
@@ -582,7 +639,7 @@ bool vop_support_format(uint32_t hal_format) {
   }
 }
 
-bool vop_support_scale(hwc_layer_1_t *layer) {
+bool vop_support_scale(hwc_layer_1_t *layer, hwc_drm_display_t *hd) {
     float hfactor;
     float vfactor;
     DrmHwcRect<float> source_crop;
@@ -592,8 +649,8 @@ bool vop_support_scale(hwc_layer_1_t *layer) {
       layer->sourceCropf.left, layer->sourceCropf.top,
       layer->sourceCropf.right, layer->sourceCropf.bottom);
     display_frame = DrmHwcRect<int>(
-      layer->displayFrame.left, layer->displayFrame.top,
-      layer->displayFrame.right, layer->displayFrame.bottom);
+      hd->w_scale * layer->displayFrame.left, hd->h_scale * layer->displayFrame.top,
+      hd->w_scale * layer->displayFrame.right, hd->h_scale * layer->displayFrame.bottom);
 
     if((layer->transform == HWC_TRANSFORM_ROT_90)
        ||(layer->transform == HWC_TRANSFORM_ROT_270)){
@@ -658,6 +715,11 @@ int is_x_intersect(DrmHwcRect<int>* rec,DrmHwcRect<int>* rec2)
 
 static bool is_layer_combine(DrmHwcLayer * layer_one,DrmHwcLayer * layer_two)
 {
+#if USE_MULTI_AREAS==0
+     ALOGD_IF(log_level(DBG_SILENT),"USE_MULTI_AREAS disable, can't support multi region");
+     return false;
+#endif
+
  #ifdef TARGET_BOARD_PLATFORM_RK3328
      ALOGD_IF(log_level(DBG_SILENT),"rk3328 can't support multi region");
      return false;
@@ -665,6 +727,10 @@ static bool is_layer_combine(DrmHwcLayer * layer_one,DrmHwcLayer * layer_two)
     //multi region only support RGBA888 RGBX8888 RGB888 565 BGRA888
     if(layer_one->format >= HAL_PIXEL_FORMAT_YCrCb_NV12
         || layer_two->format >= HAL_PIXEL_FORMAT_YCrCb_NV12
+    //RK3288 Rk3326 multi region format must be the same
+#if RK_MULTI_AREAS_FORMAT_LIMIT
+        || (layer_one->format != layer_two->format)
+#endif
         || layer_one->alpha!= layer_two->alpha
         || layer_one->is_scale || layer_two->is_scale
         || is_rec1_intersect_rec2(&layer_one->display_frame,&layer_two->display_frame)
@@ -867,7 +933,8 @@ static bool rkHasPlanesWithSize(DrmCrtc *crtc, int layer_size) {
     //loop plane groups.
     for (std::vector<PlaneGroup *> ::const_iterator iter = plane_groups.begin();
        iter != plane_groups.end(); ++iter) {
-            if(!(*iter)->bUse && (*iter)->planes.size() == (size_t)layer_size)
+            if(GetCrtcSupported(*crtc, (*iter)->possible_crtcs) && !(*iter)->bUse &&
+                (*iter)->planes.size() == (size_t)layer_size)
                 return true;
   }
   return false;
@@ -941,12 +1008,12 @@ static std::vector<DrmPlane *> rkGetNoAlphaUsablePlanes(DrmCrtc *crtc) {
                 std::copy_if((*iter)->planes.begin(), (*iter)->planes.begin()+1,
                        std::back_inserter(usable_planes),
                        [=](DrmPlane *plane) {
-                       return !plane->is_use() && plane->GetCrtcSupported(*crtc) /*&& !plane->alpha_property().id()*/; }
+                       return !plane->is_use() && plane->GetCrtcSupported(*crtc) && !plane->alpha_property().id(); }
                        );
   }
   return usable_planes;
 }
-
+/*
 static std::vector<DrmPlane *> rkGetNoEotfUsablePlanes(DrmCrtc *crtc) {
     DrmResources* drm = crtc->getDrmReoources();
     std::vector<PlaneGroup *>& plane_groups = drm->GetPlaneGroups();
@@ -964,7 +1031,7 @@ static std::vector<DrmPlane *> rkGetNoEotfUsablePlanes(DrmCrtc *crtc) {
   }
   return usable_planes;
 }
-
+*/
 //According to zpos and combine layer count,find the suitable plane.
 // bReserve [IN]: True if want to reserve feature plane.
 static bool MatchPlane(std::vector<DrmHwcLayer*>& layer_vector,
@@ -974,18 +1041,21 @@ static bool MatchPlane(std::vector<DrmHwcLayer*>& layer_vector,
                                std::vector<DrmCompositionPlane>& composition_planes,
                                bool bMulArea,
                                bool is_interlaced,
-                               int /*fbSize*/,
+                               int fbSize,
                                bool bReserve)
 {
     uint32_t combine_layer_count = 0;
     uint32_t layer_size = layer_vector.size();
-    bool b_yuv=false,b_scale=false,b_alpha=false,b_hdr2sdr=false,b_afbc=false;
+    bool b_yuv=false,b_scale=false,b_alpha=false, /*b_hdr2sdr=false,*/ b_afbc=false;
     std::vector<PlaneGroup *> ::const_iterator iter;
     std::vector<PlaneGroup *>& plane_groups = drm->GetPlaneGroups();
     uint64_t rotation = 0;
     uint64_t alpha = 0xFF;
-    uint16_t eotf = TRADITIONAL_GAMMA_SDR;
+//    uint16_t eotf = TRADITIONAL_GAMMA_SDR;
 
+#ifndef TARGET_BOARD_PLATFORM_RK3288
+    UN_USED(fbSize);
+#endif
 
     //loop plane groups.
     for (iter = plane_groups.begin();
@@ -1068,23 +1138,22 @@ static bool MatchPlane(std::vector<DrmHwcLayer*>& layer_vector,
                             if ((*iter_layer)->blending == DrmHwcBlending::kPreMult)
                                 alpha = (*iter_layer)->alpha;
 
-                            b_alpha = false;
-//                            b_alpha = (*iter_plane)->alpha_property().id()?true:false;
+                            b_alpha = (*iter_plane)->alpha_property().id() ? true : false;
 
                             if(alpha != 0xFF)
                             {
                                 if(!b_alpha)
                                 {
-                                    ALOGV("layer name=%s,plane id=%d cann't support alpha",(*iter_layer)->name.c_str(),(*iter_plane)->id());
-//                                    ALOGD_IF(log_level(DBG_DEBUG),"Plane(%d) cann't support alpha,layer alpha=0x%x,alpha id=%d",
-//                                            (*iter_plane)->id(),(*iter_layer)->alpha,(*iter_plane)->alpha_property().id());
+                                    ALOGV("layer name=%s,plane id=%d",(*iter_layer)->name.c_str(),(*iter_plane)->id());
+                                    ALOGD_IF(log_level(DBG_DEBUG),"Plane(%d) cann't support alpha,layer alpha=0x%x,alpha id=%d",
+                                            (*iter_plane)->id(),(*iter_layer)->alpha,(*iter_plane)->alpha_property().id());
                                     continue;
                                 }
                                 else
                                     bNeed = true;
                             }
 
-                            eotf = (*iter_layer)->eotf;
+/*                            eotf = (*iter_layer)->eotf;
                             b_hdr2sdr = (*iter_plane)->get_hdr2sdr();
                             if(eotf != TRADITIONAL_GAMMA_SDR)
                             {
@@ -1098,7 +1167,7 @@ static bool MatchPlane(std::vector<DrmHwcLayer*>& layer_vector,
                                 else
                                     bNeed = true;
                             }
-
+*/
 #if USE_AFBC_LAYER
                             b_afbc = (*iter_plane)->get_afbc();
                             if((*iter_layer)->is_afbc && (*iter_plane)->get_afbc_prop())
@@ -1112,8 +1181,10 @@ static bool MatchPlane(std::vector<DrmHwcLayer*>& layer_vector,
                                 else
                                     bNeed = true;
                             }
-#endif
+#else
+                            UN_USED(b_afbc);
 
+#endif
                             //Reserve some plane with no need for specific features in current layer.
                             if(bReserve && !bNeed && !bMulArea && !is_interlaced)
                             {
@@ -1158,7 +1229,7 @@ static bool MatchPlane(std::vector<DrmHwcLayer*>& layer_vector,
                                         continue;
                                     }
                                 }
-
+/*
                                 if(eotf == TRADITIONAL_GAMMA_SDR && b_hdr2sdr)
                                 {
                                     std::vector<DrmPlane *> no_eotf_planes = rkGetNoEotfUsablePlanes(crtc);
@@ -1168,6 +1239,7 @@ static bool MatchPlane(std::vector<DrmHwcLayer*>& layer_vector,
                                         continue;
                                     }
                                 }
+*/
                             }
 #if (RK_RGA_COMPSITE_SYNC | RK_RGA_PREPARE_ASYNC)
                             if(!drm->isSupportRkRga()
@@ -1179,15 +1251,15 @@ static bool MatchPlane(std::vector<DrmHwcLayer*>& layer_vector,
                             {
                                 rotation = 0;
                                 if ((*iter_layer)->transform & DrmHwcTransform::kFlipH)
-                                    rotation |= 1 << DRM_REFLECT_X;
+                                    rotation |= DRM_MODE_REFLECT_X;
                                 if ((*iter_layer)->transform & DrmHwcTransform::kFlipV)
-                                    rotation |= 1 << DRM_REFLECT_Y;
+                                    rotation |= DRM_MODE_REFLECT_Y;
                                 if ((*iter_layer)->transform & DrmHwcTransform::kRotate90)
-                                    rotation |= 1 << DRM_ROTATE_90;
+                                    rotation |= DRM_MODE_ROTATE_90;
                                 else if ((*iter_layer)->transform & DrmHwcTransform::kRotate180)
-                                    rotation |= 1 << DRM_ROTATE_180;
+                                    rotation |= DRM_MODE_ROTATE_180;
                                 else if ((*iter_layer)->transform & DrmHwcTransform::kRotate270)
-                                    rotation |= 1 << DRM_ROTATE_270;
+                                    rotation |= DRM_MODE_ROTATE_270;
                                 if(rotation && !(rotation & (*iter_plane)->get_rotate()))
                                     continue;
                             }
@@ -1241,6 +1313,12 @@ bool MatchPlanes(
     uint64_t last_zpos=0;
     bool bMatch = false;
 
+#ifdef USE_PLANE_RESERVED
+        uint64_t win1_reserved = hwc_get_int_property( PROPERTY_TYPE ".hwc.win1.reserved", "0");
+        uint64_t win1_zpos = hwc_get_int_property( PROPERTY_TYPE ".hwc.win1.zpos", "0");
+#endif
+
+
     //set use flag to false.
     for (std::vector<PlaneGroup *> ::const_iterator iter = plane_groups.begin();
        iter != plane_groups.end(); ++iter) {
@@ -1257,6 +1335,12 @@ bool MatchPlanes(
 
     for (LayerMap::iterator iter = layer_map.begin();
         iter != layer_map.end(); ++iter) {
+#ifdef USE_PLANE_RESERVED
+        if(win1_reserved > 0 && win1_zpos == last_zpos)
+        {
+            last_zpos++;
+        }
+#endif
         if(iter == layer_map.begin())
         {
             DrmHwcLayer* first_layer = (iter->second)[0];
@@ -1301,16 +1385,10 @@ float getPixelWidthByAndroidFormat(int format)
                        pixelWidth = 2.0;
                        break;
 
-               case HAL_PIXEL_FORMAT_sRGB_A_8888:
-               case HAL_PIXEL_FORMAT_sRGB_X_8888:
-                       ALOGE("format 0x%x not support",format);
-                       break;
-
-               case HAL_PIXEL_FORMAT_YCbCr_422_SP:
-               case HAL_PIXEL_FORMAT_YCrCb_420_SP:
-               case HAL_PIXEL_FORMAT_YCbCr_422_I:
+               case HAL_PIXEL_FORMAT_YCBCR_422_SP:
+               case HAL_PIXEL_FORMAT_YCRCB_420_SP:
+               case HAL_PIXEL_FORMAT_YCBCR_422_I:
                case HAL_PIXEL_FORMAT_YCrCb_NV12:
-               case HAL_PIXEL_FORMAT_YCrCb_NV12_VIDEO:
                        pixelWidth = 1.0;
                        break;
 
@@ -1323,7 +1401,7 @@ float getPixelWidthByAndroidFormat(int format)
                        break;
 
                default:
-                       ALOGE("format 0x%x not support",format);
+                       ALOGE("%s: format 0x%x is not supported", __func__, format);
                        break;
        }
        return pixelWidth;
@@ -1666,7 +1744,19 @@ bool mix_policy(DrmResources* drm, DrmCrtc *crtc, hwc_drm_display_t *hd,
         if(bAllMatch)
             goto AllMatch;
         else
-            resore_tmp_layers_except_fb(layers, tmp_layers);
+       {
+          resore_tmp_layers_except_fb(layers, tmp_layers);
+          if(hd->isVideo)
+          for(-- layer_indices.first;layer_indices.first>0 ; -- layer_indices.first)
+           {
+                 ALOGD_IF(log_level(DBG_DEBUG), "%s:mix up for video (%d,%d)",__FUNCTION__,layer_indices.first, layer_indices.second);
+                 bAllMatch = try_mix_policy(drm, crtc,hd->is_interlaced,  layers, tmp_layers, iPlaneSize, composition_planes,
+                 layer_indices.first, layer_indices.second, fbSize);
+                 if(bAllMatch)
+                 goto AllMatch;
+                 resore_tmp_layers_except_fb(layers, tmp_layers);
+           }
+       }
     }
 
     /*************************mix down*************************
@@ -1811,7 +1901,7 @@ AllMatch:
             {
                 ALOGD_IF(log_level(DBG_DEBUG), "%s:line=%d vop band with is too big,fail match layers.size=%zu",__FUNCTION__,__LINE__,layers.size());
                 goto FailMatch;
-            } 
+            }
         }
     }
 #endif
@@ -1826,98 +1916,6 @@ FailMatch:
 
     return false;
 }
-
-#if RK_VIDEO_UI_OPT
-void video_ui_optimize(const gralloc_module_t *gralloc, hwc_display_contents_1_t *display_content, hwc_drm_display_t *hd)
-{
-    int ret = 0;
-    int format = 0;
-    int num_layers = display_content->numHwLayers;
-    if(num_layers == 3)
-    {
-        hwc_layer_1_t *first_layer = &display_content->hwLayers[0];
-        if(first_layer->handle)
-        {
-#if RK_DRM_GRALLOC
-            format = hwc_get_handle_attibute(gralloc, first_layer->handle, ATT_FORMAT);
-#else
-            format = hwc_get_handle_format(gralloc, first_layer->handle);
-#endif
-            if(format == HAL_PIXEL_FORMAT_YCrCb_NV12 || format == HAL_PIXEL_FORMAT_YCrCb_NV12_10)
-            {
-                bool bDiff = true;
-                int iUiFd = 0;
-                hwc_layer_1_t * second_layer =  &display_content->hwLayers[1];
-#if RK_DRM_GRALLOC
-                format = hwc_get_handle_attibute(gralloc, second_layer->handle, ATT_FORMAT);
-#else
-                format = hwc_get_handle_format(gralloc, second_layer->handle);
-#endif
-                if(second_layer->handle &&
-                    (format == HAL_PIXEL_FORMAT_RGBA_8888 ||
-                    format == HAL_PIXEL_FORMAT_RGBX_8888 ||
-                    format == HAL_PIXEL_FORMAT_BGRA_8888)
-                  )
-                {
-                    iUiFd = hwc_get_handle_primefd(gralloc, second_layer->handle);
-                    bDiff = (iUiFd != hd->iUiFd);
-
-                    if(bDiff)
-                    {
-                        hd->bHideUi = false;
-                        /* Update the backup ui fd */
-                        hd->iUiFd = iUiFd;
-                    }
-                    else if(!hd->bHideUi)
-                    {
-#if RK_DRM_GRALLOC
-                        int iWidth = hwc_get_handle_attibute(gralloc,second_layer->handle,ATT_WIDTH);
-                        int iHeight = hwc_get_handle_attibute(gralloc,second_layer->handle,ATT_HEIGHT);
-#else
-                        int iWidth = hwc_get_handle_width(gralloc,second_layer->handle);
-                        int iHeight = hwc_get_handle_height(gralloc,second_layer->handle);
-#endif
-                        unsigned int *cpu_addr = NULL;;
-
-#if 0
-                        IMG_native_handle_t * pvHandle = (IMG_native_handle_t *)second_layer->handle;
-                        cpu_addr= (unsigned int *)pvHandle->pvBase;
-#else
-                        ret = gralloc->lock(gralloc, second_layer->handle, GRALLOC_USAGE_SW_READ_MASK,
-                                0, 0, iWidth, iHeight, (void **)&cpu_addr);
-                        if( (ret != 0) || (cpu_addr == NULL) || (cpu_addr == MAP_FAILED) )
-                        {
-                            ALOGD("%s:line=%d lock failed w=%d,h=%d,cpu_addr=%p", __FUNCTION__, __LINE__, iWidth, iHeight, cpu_addr);
-                        }
-                        else
-#endif
-                        {
-                  //          ret = DetectValidData((int *)(cpu_addr),iWidth,iHeight);
-                        //    if(!ret)
-                     //       {
-                      //          hd->bHideUi = true;
-                         //       ALOGD_IF(log_level(DBG_VERBOSE), "@video UI close,iWidth=%d,iHeight=%d",iWidth,iHeight);
-                      //      }
-                        }
-#if 1
-                        gralloc->unlock(gralloc, second_layer->handle);
-#endif
-                    }
-
-                    if(hd->bHideUi)
-                    {
-                        second_layer->compositionType = HWC_NODRAW;
-                    }
-                    else
-                    {
-                        second_layer->compositionType = HWC_FRAMEBUFFER;
-                    }
-                }
-            }
-        }
-    }
-}
-#endif
 
 void hwc_list_nodraw(hwc_display_contents_1_t  *list)
 {
@@ -1940,9 +1938,9 @@ void hwc_sync_release(hwc_display_contents_1_t  *list)
 			return ;
 		}
 		if (layer->acquireFenceFd>0){
-#if RK_PRINT_LAYER_NAME
-			ALOGV(">>>close acquireFenceFd:%d,layername=%s",layer->acquireFenceFd,layer->LayerName);
-#endif
+//#if RK_PRINT_LAYER_NAME
+//			ALOGV(">>>close acquireFenceFd:%d,layername=%s",layer->acquireFenceFd,layer->LayerName);
+//#endif
 			close(layer->acquireFenceFd);
 			list->hwLayers[i].acquireFenceFd = -1;
 		}
@@ -1953,121 +1951,6 @@ void hwc_sync_release(hwc_display_contents_1_t  *list)
 		close(list->outbufAcquireFenceFd);
 		list->outbufAcquireFenceFd = -1;
 	}
-}
-
-int hwc_parse_format_into_prop(int display,unsigned int format,unsigned int depthc) {
-
-    if(display == HWC_DISPLAY_PRIMARY){
-        if (format == DRM_HDMI_OUTPUT_YCBCR_HQ &&
-                depthc == ROCKCHIP_DEPTH_DEFAULT) {
-            property_set("persist.sys.color.main","Auto");
-            return 0;
-        }
-
-        if (format == DRM_HDMI_OUTPUT_DEFAULT_RGB &&
-                depthc == ROCKCHIP_HDMI_DEPTH_8) {
-            property_set("persist.sys.color.main","RGB-8bit");
-            return 0;
-        }
-
-        if (format == DRM_HDMI_OUTPUT_DEFAULT_RGB &&
-                depthc == ROCKCHIP_HDMI_DEPTH_10) {
-            property_set("persist.sys.color.main","RGB-10bit");
-            return 0;
-        }
-
-        if (format == DRM_HDMI_OUTPUT_YCBCR444 &&
-                depthc == ROCKCHIP_HDMI_DEPTH_8) {
-            property_set("persist.sys.color.main","YCBCR444-8bit");
-            return 0;
-        }
-
-        if (format == DRM_HDMI_OUTPUT_YCBCR444 &&
-                depthc == ROCKCHIP_HDMI_DEPTH_10) {
-            property_set("persist.sys.color.main","YCBCR444-10bit");
-            return 0;
-        }
-
-        if (format == DRM_HDMI_OUTPUT_YCBCR422 &&
-                depthc == ROCKCHIP_HDMI_DEPTH_8) {
-            property_set("persist.sys.color.main","YCBCR422-8bit");
-            return 0;
-        }
-
-        if (format == DRM_HDMI_OUTPUT_YCBCR422 &&
-                depthc == ROCKCHIP_HDMI_DEPTH_10) {
-            property_set("persist.sys.color.main","YCBCR422-10bit");
-            return 0;
-        }
-
-        if (format == DRM_HDMI_OUTPUT_YCBCR420 &&
-                depthc == ROCKCHIP_HDMI_DEPTH_8) {
-            property_set("persist.sys.color.main","YCBCR420-8bit");
-            return 0;
-        }
-
-        if (format == DRM_HDMI_OUTPUT_YCBCR420 &&
-                depthc == ROCKCHIP_HDMI_DEPTH_10) {
-            property_set("persist.sys.color.main","YCBCR420-10bit");
-            return 0;
-        }
-    }else{
-        if (format == DRM_HDMI_OUTPUT_YCBCR_HQ &&
-                depthc == ROCKCHIP_DEPTH_DEFAULT) {
-            property_set("persist.sys.color.aux","Auto");
-            return 0;
-        }
-
-        if (format == DRM_HDMI_OUTPUT_DEFAULT_RGB &&
-                depthc == ROCKCHIP_HDMI_DEPTH_8) {
-            property_set("persist.sys.color.aux","RGB-8bit");
-            return 0;
-        }
-
-        if (format == DRM_HDMI_OUTPUT_DEFAULT_RGB &&
-                depthc == ROCKCHIP_HDMI_DEPTH_10) {
-            property_set("persist.sys.color.aux","RGB-10bit");
-            return 0;
-        }
-
-        if (format == DRM_HDMI_OUTPUT_YCBCR444 &&
-                depthc == ROCKCHIP_HDMI_DEPTH_8) {
-            property_set("persist.sys.color.aux","YCBCR444-8bit");
-            return 0;
-        }
-
-        if (format == DRM_HDMI_OUTPUT_YCBCR444 &&
-                depthc == ROCKCHIP_HDMI_DEPTH_10) {
-            property_set("persist.sys.color.aux","YCBCR444-10bit");
-            return 0;
-        }
-
-        if (format == DRM_HDMI_OUTPUT_YCBCR422 &&
-                depthc == ROCKCHIP_HDMI_DEPTH_8) {
-            property_set("persist.sys.color.aux","YCBCR422-8bit");
-            return 0;
-        }
-
-        if (format == DRM_HDMI_OUTPUT_YCBCR422 &&
-                depthc == ROCKCHIP_HDMI_DEPTH_10) {
-            property_set("persist.sys.color.aux","YCBCR422-10bit");
-            return 0;
-        }
-
-        if (format == DRM_HDMI_OUTPUT_YCBCR420 &&
-                depthc == ROCKCHIP_HDMI_DEPTH_8) {
-            property_set("persist.sys.color.aux","YCBCR420-8bit");
-            return 0;
-        }
-
-        if (format == DRM_HDMI_OUTPUT_YCBCR420 &&
-                depthc == ROCKCHIP_HDMI_DEPTH_10) {
-            property_set("persist.sys.color.aux","YCBCR420-10bit");
-            return 0;
-        }
-    }
-        ALOGE("BP: baseparameter color is invalid.");
-        return -1;
 }
 
 bool hwc_video_to_area(DrmHwcRect<float> &source_yuv,DrmHwcRect<int> &display_yuv,int scaleMode){
@@ -2150,6 +2033,4 @@ bool hwc_video_to_area(DrmHwcRect<float> &source_yuv,DrmHwcRect<int> &display_yu
     return true;
 }
 
-
-}
-
+} // namespace Android

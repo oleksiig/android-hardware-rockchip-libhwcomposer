@@ -1,10 +1,46 @@
+/*
+ * Copyright (C) 2018 Fuzhou Rockchip Electronics Co.Ltd.
+ *
+ * Modification based on code covered by the Apache License, Version 2.0 (the "License").
+ * You may not use this software except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS TO YOU ON AN "AS IS" BASIS
+ * AND ANY AND ALL WARRANTIES AND REPRESENTATIONS WITH RESPECT TO SUCH SOFTWARE, WHETHER EXPRESS,
+ * IMPLIED, STATUTORY OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY IMPLIED WARRANTIES OF TITLE,
+ * NON-INFRINGEMENT, MERCHANTABILITY, SATISFACTROY QUALITY, ACCURACY OR FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.
+ *
+ * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Copyright (C) 2015 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
 #define LOG_TAG "hwc_debug"
 
-#include <pthread.h>
+#include <sstream>
 
 #include "hwc_debug.h"
 #include "hwc_rockchip.h"
-#include <sstream>
 
 namespace android {
 
@@ -29,7 +65,7 @@ int get_frame()
 int init_log_level()
 {
     char value[PROPERTY_VALUE_MAX];
-    property_get("sys.hwc.log", value, "0");
+    property_get( PROPERTY_TYPE ".hwc.log", value, "0");
     g_log_level = atoi(value);
     return 0;
 }
@@ -55,11 +91,11 @@ void init_rk_debug()
  */
 #define DUMP_LAYER_CNT (10)
 static int DumpSurfaceCount = 0;
-int DumpLayer(const char* layer_name,buffer_handle_t handle)
+int DumpLayer(const char* layer_name, buffer_handle_t handle)
 {
     char pro_value[PROPERTY_VALUE_MAX];
 
-    property_get("sys.dump",pro_value,0);
+    property_get( PROPERTY_TYPE ".dump",pro_value,0);
 
     if(handle && !strcmp(pro_value,"true"))
     {
@@ -67,7 +103,7 @@ int DumpLayer(const char* layer_name,buffer_handle_t handle)
         char data_name[100] ;
         const gralloc_module_t *gralloc;
         void* cpu_addr;
-        int width,height,stride,byte_stride,format,size;
+        int width, height, stride, byte_stride, format, size;
 
         int ret = hw_get_module(GRALLOC_HARDWARE_MODULE_ID,
                           (const hw_module_t **)&gralloc);
@@ -75,27 +111,24 @@ int DumpLayer(const char* layer_name,buffer_handle_t handle)
             ALOGE("Failed to open gralloc module");
             return ret;
         }
-#if RK_DRM_GRALLOC
+
         width = hwc_get_handle_attibute(gralloc,handle,ATT_WIDTH);
         height = hwc_get_handle_attibute(gralloc,handle,ATT_HEIGHT);
         stride = hwc_get_handle_attibute(gralloc,handle,ATT_STRIDE);
         byte_stride = hwc_get_handle_attibute(gralloc,handle,ATT_BYTE_STRIDE);
         format = hwc_get_handle_attibute(gralloc,handle,ATT_FORMAT);
         size = hwc_get_handle_attibute(gralloc,handle,ATT_SIZE);
-#else
-        width = hwc_get_handle_width(gralloc,handle);
-        height = hwc_get_handle_height(gralloc,handle);
-        stride = hwc_get_handle_stride(gralloc,handle);
-        byte_stride = hwc_get_handle_byte_stride(gralloc,handle);
-        format = hwc_get_handle_format(gralloc,handle);
-        size = hwc_get_handle_size(gralloc,handle);
-#endif
+
         system("mkdir /data/dump/ && chmod /data/dump/ 777 ");
+
         DumpSurfaceCount++;
-        sprintf(data_name,"/data/dump/dmlayer%d_%d_%d.raw", DumpSurfaceCount,
-                stride,height);
+
+        sprintf(data_name,"/data/dump/dmlayer_%.20s_%d_%d_%d.bin", 
+            layer_name, DumpSurfaceCount, stride, height);
+
         gralloc->lock(gralloc, handle, GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK, //gr_handle->usage,
                         0, 0, width, height, (void **)&cpu_addr);
+
         pfile = fopen(data_name,"wb");
         if(pfile)
         {
@@ -111,16 +144,55 @@ int DumpLayer(const char* layer_name,buffer_handle_t handle)
             ALOGD(" dump surface layer_name: %s,data_name %s,w:%d,h:%d,stride :%d,size=%d,cpu_addr=%p",
                 layer_name,data_name,width,height,byte_stride,size,cpu_addr);
         }
+
         gralloc->unlock(gralloc, handle);
+
         //only dump once time.
         if(DumpSurfaceCount > DUMP_LAYER_CNT)
         {
             DumpSurfaceCount = 0;
-            property_set("sys.dump","0");
+            property_set( PROPERTY_TYPE ".dump","0");
         }
     }
     return 0;
 }
+
+int DumpLayerList(hwc_display_contents_1_t *dc, const gralloc_module_t *gralloc)
+{
+    char pro_value[PROPERTY_VALUE_MAX];
+    property_get( PROPERTY_TYPE ".dump",pro_value,0);
+
+    if(strcmp(pro_value,"true"))
+        return 0;
+
+    size_t num_dc_layers = dc->numHwLayers;
+    for (size_t j = 0; j < num_dc_layers; ++j) {
+        hwc_layer_1_t *sf_layer = &dc->hwLayers[j];
+        if(sf_layer->acquireFenceFd > 0){
+            sync_wait(sf_layer->acquireFenceFd, -1);
+            close(sf_layer->acquireFenceFd);
+            sf_layer->acquireFenceFd = -1;
+        }
+        char layername[100];
+        if(sf_layer->compositionType != HWC_FRAMEBUFFER_TARGET){
+#if RK_PRINT_LAYER_NAME
+#ifdef USE_HWC2
+            if(sf_layer->handle){
+                hwc_get_handle_layername(gralloc, sf_layer->handle, layername, 100);
+            }
+#else
+            UN_USED(gralloc);
+            strcpy(layername, sf_layer->LayerName);
+#endif
+#endif
+        }else{
+            strcpy(layername,"FB-target");
+        }
+        DumpLayer(layername,sf_layer->handle);
+    }
+    return 0;
+}
+
 
 static unsigned int HWC_Clockms(void)
 {
@@ -136,7 +208,7 @@ void hwc_dump_fps(void)
 
 	++n_frames;
 
-	if (property_get_bool("sys.hwc.fps", 0))
+	if (property_get_bool( PROPERTY_TYPE ".hwc.fps", 0))
 	{
 		unsigned int time = HWC_Clockms();
 		unsigned int intv = time - lastTime;
@@ -155,9 +227,7 @@ void dump_layer(const gralloc_module_t *gralloc, bool bDump, hwc_layer_1_t *laye
     size_t i;
   std::ostringstream out;
   int format;
-#if RK_PRINT_LAYER_NAME
   char layername[100];
-#endif
 
   if (!bDump && !log_level(DBG_VERBOSE))
     return;
@@ -170,15 +240,11 @@ void dump_layer(const gralloc_module_t *gralloc, bool bDump, hwc_layer_1_t *laye
     {
         if(layer->handle)
         {
-#if RK_DRM_GRALLOC
             format = hwc_get_handle_attibute(gralloc, layer->handle, ATT_FORMAT);
-#else
-            format = hwc_get_handle_format(gralloc, layer->handle);
-#endif
 
 #if RK_PRINT_LAYER_NAME
 #ifdef USE_HWC2
-                hwc_get_handle_layername(gralloc, layer->handle, layername, 100);
+                HWC_GET_HANDLE_LAYERNAME(gralloc,layer, layer->handle, layername, 100);
                 out << "layer[" << index << "]=" << layername
 #else
                 out << "layer[" << index << "]=" << layer->LayerName
@@ -215,7 +281,7 @@ void dump_layer(const gralloc_module_t *gralloc, bool bDump, hwc_layer_1_t *laye
         {
 #if RK_PRINT_LAYER_NAME
 #ifdef USE_HWC2
-                hwc_get_handle_layername(gralloc, layer->handle, layername, 100);
+                HWC_GET_HANDLE_LAYERNAME(gralloc,layer, layer->handle, layername, 100);
                 out << "layer[" << index << "]=" << layername
 #else
                 out << "layer[" << index << "]=" << layer->LayerName

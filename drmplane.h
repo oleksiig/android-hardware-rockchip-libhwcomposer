@@ -77,7 +77,7 @@ class DrmPlane {
  // const DrmProperty &eotf_property() const;
   //const DrmProperty &blend_mode_property() const;
   //const DrmProperty &colorspace_property() const;
- // const DrmProperty &alpha_property() const;
+  const DrmProperty &alpha_property() const;
   bool is_use();
   void set_use(bool b_use);
   bool get_scale();
@@ -88,10 +88,10 @@ class DrmPlane {
   bool get_afbc_prop();
   bool get_yuv();
   void set_yuv(bool b_yuv);
- // const DrmProperty &zpos_property() const;
- // const DrmProperty &area_id_property() const;
- // const DrmProperty &share_id_property() const;
- // const DrmProperty &feature_property() const;
+  const DrmProperty &zpos_property() const;
+  const DrmProperty &area_id_property() const;
+  const DrmProperty &share_id_property() const;
+  const DrmProperty &feature_property() const;
   bool is_reserved();
   void set_reserved(bool b_reserved);
   inline uint32_t get_possible_crtc_mask() const
@@ -121,15 +121,15 @@ class DrmPlane {
   DrmProperty src_w_property_;
   DrmProperty src_h_property_;
  // DrmProperty rotation_property_;
-  //DrmProperty alpha_property_;
+  DrmProperty alpha_property_;
   //DrmProperty eotf_property_;
  // DrmProperty blend_mode_property_;
  // DrmProperty colorspace_property_;
 
-  //DrmProperty zpos_property_;
- // DrmProperty area_id_property_;
-  //DrmProperty share_id_property_;
- // DrmProperty feature_property_;
+  DrmProperty zpos_property_;
+  DrmProperty area_id_property_;
+  DrmProperty share_id_property_;
+  DrmProperty feature_property_;
   bool b_reserved_;
   bool b_use_;
   bool b_yuv_;
